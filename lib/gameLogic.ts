@@ -99,13 +99,17 @@ export function calculateCatchRate(
   
   const ballMod = ballModifiers[ballType];
   
-  // Base catch rate (simplified)
+  // Base catch rate (simplified) - lower HP = easier to catch
   const baseCatchRate = 45; // Base rate for most Pokemon
-  const catchRate = baseCatchRate * ballMod * (1 - hpPercentage * 0.5);
+  const hpModifier = (1 - hpPercentage * 0.5); // 0.5 to 1.0 based on HP
+  const catchRate = baseCatchRate * ballMod * hpModifier;
   
-  // Roll determines success
-  const threshold = catchRate * 1.28; // Scale to d20
-  return roll >= (20 - threshold);
+  // Scale to d20: need to roll >= (21 - scaled catch rate)
+  // catchRate range: 22.5 to 90, scale to 1-20
+  const scaledRate = Math.min(19, Math.max(1, Math.floor(catchRate / 5)));
+  const threshold = 21 - scaledRate;
+  
+  return roll >= threshold;
 }
 
 // Experience and leveling

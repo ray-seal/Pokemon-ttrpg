@@ -59,9 +59,18 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
     }
 
     const roll = rollDice(100);
-    const encounter = currentLocation.wildPokemon.find(
+    
+    // Find the first encounter that matches the roll
+    let encounter = currentLocation.wildPokemon.find(
       (enc) => roll <= enc.rarity
-    ) || currentLocation.wildPokemon[currentLocation.wildPokemon.length - 1];
+    );
+    
+    // Fallback to most common Pokemon (highest rarity) if none match
+    if (!encounter) {
+      encounter = currentLocation.wildPokemon.reduce((prev, current) => 
+        (current.rarity > prev.rarity) ? current : prev
+      );
+    }
 
     const level = encounter.minLevel + Math.floor(Math.random() * (encounter.maxLevel - encounter.minLevel + 1));
     const wildPokemon = generateWildPokemon(encounter.pokemonId, level);
