@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GameState, Pokemon, Move } from '@/types/game';
 import { getLocation, SHOP_ITEMS, RIVAL_TRAINERS } from '@/lib/locations';
 import {
@@ -43,6 +43,18 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const [selectedMove, setSelectedMove] = useState<Move | null>(null);
 
+  // Ensure storyFlags are initialized
+  useEffect(() => {
+    if (!gameState.storyFlags) {
+      setGameState({
+        ...gameState,
+        storyFlags: {
+          rivalBattleRoute1: false,
+        },
+      });
+    }
+  }, []);
+
   const currentLocation = getLocation(gameState.player.location);
 
   const addDialogue = (text: string) => {
@@ -53,8 +65,14 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
   };
 
   const handleExploreGrass = () => {
+    console.log('Explore grass clicked');
+    console.log('Current location:', gameState.player.location);
+    console.log('Story flags:', gameState.storyFlags);
+    console.log('Rival battle completed?', gameState.storyFlags?.rivalBattleRoute1);
+    
     // Check for Route 1 rival battle (tutorial - first time only)
     if (gameState.player.location === 'route1' && !gameState.storyFlags?.rivalBattleRoute1) {
+      console.log('Triggering rival battle!');
       const rival = RIVAL_TRAINERS.route1Rival;
       
       const introDialogue = rival.dialogue.intro.replace('{playerName}', gameState.player.name);
@@ -265,7 +283,7 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
 
         // Check if gym battle and award badge
         let finalPlayer = { ...updatedPlayer, team: updatedTeam };
-        let updatedStoryFlags = { ...gameState.storyFlags };
+        let updatedStoryFlags = gameState.storyFlags ? { ...gameState.storyFlags } : { rivalBattleRoute1: false };
         
         if (gameState.currentBattle.isGym && currentLocation?.gymLeader) {
           finalPlayer = addBadge(finalPlayer);
@@ -299,7 +317,7 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
         newBattleLog.push(`${playerPokemon.name} fainted!`);
         
         // Handle rival battle loss differently
-        let updatedStoryFlags = { ...gameState.storyFlags };
+        let updatedStoryFlags = gameState.storyFlags ? { ...gameState.storyFlags } : { rivalBattleRoute1: false };
         if (gameState.currentBattle.isRival && gameState.currentBattle.trainerName === 'Blue') {
           updatedStoryFlags.rivalBattleRoute1 = true;
           newBattleLog.push('Blue: "See? That\'s how it\'s done! You need to train more!"');

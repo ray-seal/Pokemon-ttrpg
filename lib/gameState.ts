@@ -51,6 +51,14 @@ export function loadGame(): GameState | null {
     if (!savedData) return null;
     
     const gameState: GameState = JSON.parse(savedData);
+    
+    // Backward compatibility: Initialize storyFlags if missing
+    if (!gameState.storyFlags) {
+      gameState.storyFlags = {
+        rivalBattleRoute1: false,
+      };
+    }
+    
     return gameState;
   } catch (error) {
     console.error('Error loading game:', error);
