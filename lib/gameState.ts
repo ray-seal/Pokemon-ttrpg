@@ -36,6 +36,9 @@ export function createNewGame(playerName: string, starterPokemon: Pokemon): Game
       `Welcome to the world of Pokemon, ${playerName}!`,
       'Your adventure begins in Pallet Town...',
     ],
+    storyFlags: {
+      rivalBattleRoute1: false,
+    },
   };
 }
 

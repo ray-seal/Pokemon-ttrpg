@@ -12,6 +12,33 @@ export const SHOP_ITEMS: ShopItem[] = [
   { name: 'Revive', price: 1500, description: 'Revives a fainted Pokemon', key: 'revive' },
 ];
 
+// Rival Trainers
+export const RIVAL_TRAINERS: { [key: string]: GymLeader } = {
+  route1Rival: {
+    name: 'Blue',
+    badge: 'Tutorial Complete',
+    reward: 500,
+    dialogue: {
+      intro: `{playerName}! I'm Blue, Professor Oak's grandson! I'm going to become the world's greatest Pokemon Master! Let me show you how battles work!`,
+      win: 'What?! I lost? Grrr... I need to train harder. Next time, I\'ll beat you for sure!',
+      lose: 'See? That\'s how it\'s done! You need to train more!',
+    },
+    team: [
+      {
+        id: 4,
+        name: 'Charmander',
+        types: ['Fire'],
+        baseStats: { hp: 39, attack: 52, defense: 43, specialAttack: 60, specialDefense: 50, speed: 65 },
+        level: 5,
+        exp: 0,
+        maxHp: 20,
+        currentHp: 20,
+        moves: [MOVES.scratch, MOVES.ember],
+      },
+    ],
+  },
+};
+
 // Gym Leaders (8 gyms from Pokemon Red)
 export const GYM_LEADERS: { [key: string]: GymLeader } = {
   brock: {

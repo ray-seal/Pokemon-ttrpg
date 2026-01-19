@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { GameState, Pokemon, Move } from '@/types/game';
-import { getLocation, SHOP_ITEMS } from '@/lib/locations';
+import { getLocation, SHOP_ITEMS, RIVAL_TRAINERS } from '@/lib/locations';
 import {
   executeBattleTurn,
   generateWildPokemon,
@@ -53,6 +53,37 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
   };
 
   const handleExploreGrass = () => {
+    // Check for Route 1 rival battle (tutorial - first time only)
+    if (gameState.player.location === 'route1' && !gameState.storyFlags?.rivalBattleRoute1) {
+      const rival = RIVAL_TRAINERS.route1Rival;
+      
+      const introDialogue = rival.dialogue.intro.replace('{playerName}', gameState.player.name);
+      addDialogue(introDialogue);
+      addDialogue('This is a Pokemon battle! Choose your moves wisely and watch your HP!');
+
+      setGameState({
+        ...gameState,
+        currentBattle: {
+          opponent: rival.team.map(p => ({ ...p })),
+          isGym: false,
+          isWild: false,
+          isRival: true,
+          trainerName: rival.name,
+          currentTurn: 0,
+        },
+      });
+
+      setBattleLog([
+        `${rival.name} challenges you to your first Pokemon battle!`,
+        `${gameState.player.name} sent out ${gameState.player.team[0].name}!`,
+        `${rival.name} sent out ${rival.team[0].name}!`,
+        '--- TUTORIAL BATTLE ---',
+        'TIP: Click on a move to attack. Different types are strong or weak against each other!',
+      ]);
+      setCurrentView('battle');
+      return;
+    }
+
     if (!currentLocation?.wildPokemon || currentLocation.wildPokemon.length === 0) {
       addDialogue('There are no wild Pokemon in this area.');
       return;
@@ -234,10 +265,20 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
 
         // Check if gym battle and award badge
         let finalPlayer = { ...updatedPlayer, team: updatedTeam };
+        let updatedStoryFlags = { ...gameState.storyFlags };
+        
         if (gameState.currentBattle.isGym && currentLocation?.gymLeader) {
           finalPlayer = addBadge(finalPlayer);
           newBattleLog.push(`You earned the ${currentLocation.gymLeader.badge}!`);
           newBattleLog.push(currentLocation.gymLeader.dialogue.win.replace('{playerName}', gameState.player.name));
+        }
+
+        // Check if rival battle and mark as completed
+        if (gameState.currentBattle.isRival && gameState.currentBattle.trainerName === 'Blue') {
+          updatedStoryFlags.rivalBattleRoute1 = true;
+          newBattleLog.push('--- TUTORIAL COMPLETE ---');
+          newBattleLog.push('You can now encounter wild Pokemon on Route 1!');
+          newBattleLog.push('TIP: Use Poke Balls to catch wild Pokemon. Visit the PokeMart to buy more items!');
         }
 
         setBattleLog(newBattleLog);
@@ -245,6 +286,7 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
           ...gameState,
           player: finalPlayer,
           currentBattle: undefined,
+          storyFlags: updatedStoryFlags,
         });
 
         setTimeout(() => {
@@ -255,6 +297,31 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
 
       if (updatedPlayerPokemon.currentHp <= 0) {
         newBattleLog.push(`${playerPokemon.name} fainted!`);
+        
+        // Handle rival battle loss differently
+        let updatedStoryFlags = { ...gameState.storyFlags };
+        if (gameState.currentBattle.isRival && gameState.currentBattle.trainerName === 'Blue') {
+          updatedStoryFlags.rivalBattleRoute1 = true;
+          newBattleLog.push('Blue: "See? That\'s how it\'s done! You need to train more!"');
+          newBattleLog.push('--- TUTORIAL COMPLETE ---');
+          newBattleLog.push('Don\'t worry! You\'re healed after trainer battles.');
+          newBattleLog.push('You can now encounter wild Pokemon on Route 1!');
+          
+          const healedTeam = gameState.player.team.map(fullyHealPokemon);
+          
+          setBattleLog(newBattleLog);
+          setGameState({
+            ...gameState,
+            player: { ...gameState.player, team: healedTeam },
+            currentBattle: undefined,
+            storyFlags: updatedStoryFlags,
+          });
+
+          setTimeout(() => {
+            setCurrentView('map');
+          }, 2000);
+          return;
+        }
         
         const coinsLost = Math.floor(gameState.player.coins * 0.1);
         const updatedPlayer = updateCoins(gameState.player, -coinsLost);

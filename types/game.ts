@@ -131,8 +131,14 @@ export interface GameState {
     opponent: Pokemon[];
     isGym: boolean;
     isWild: boolean;
+    isRival?: boolean;
+    trainerName?: string;
     currentTurn: number;
   };
   gameStarted: boolean;
   dialogueHistory: string[];
+  storyFlags?: {
+    rivalBattleRoute1?: boolean;
+    [key: string]: boolean | undefined;
+  };
 }
