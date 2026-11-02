@@ -1,12 +1,23 @@
-const CACHE_NAME = 'pokemon-ttrpg-v2';
-const APP_SHELL = ['/', '/manifest.json', '/icon.svg'];
+const CACHE_NAME = 'pokemon-ttrpg-v3';
+const APP_SHELL = ['/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const shellResponse = await fetch('/');
+    if (!shellResponse.ok) throw new Error('Unable to cache the app shell');
+    const html = await shellResponse.clone().text();
+    await cache.put('/', shellResponse);
+
+    // Pre-cache the Next.js scripts and styles referenced by the first page,
+    // so the installed app has the code it needs when opened offline.
+    const assetPaths = Array.from(
+      html.matchAll(/(?:src|href)=["']([^"']*\/_next\/static\/[^"']+)["']/g),
+      (match) => new URL(match[1], self.location.origin).toString()
+    );
+    await cache.addAll([...APP_SHELL, ...assetPaths]);
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
