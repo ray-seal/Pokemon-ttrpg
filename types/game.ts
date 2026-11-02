@@ -111,6 +111,10 @@ export interface NPC {
   checkDifficulty?: number;
   successDialogue?: string;
   failureDialogue?: string;
+  rewardKeyItem?: string;
+  rewardName?: string;
+  rewardFlag?: string;
+  requiredTrainerDefeated?: string;
 }
 
 export interface TrainerEncounter {
