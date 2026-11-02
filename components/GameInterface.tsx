@@ -222,7 +222,11 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
       return;
     }
     if (npc.rewardFlag && gameState.storyFlags?.[npc.rewardFlag]) {
-      addDialogue(`${npc.name}: “${npc.repeatDialogue || 'You have already made your choice.'}”`);
+      const alreadyHasThisReward = !!npc.rewardKeyItem && (gameState.player.keyItems || []).includes(npc.rewardKeyItem);
+      const response = alreadyHasThisReward
+        ? npc.repeatDialogue || 'You have already received this item.'
+        : 'You have already chosen a fossil. The other specimen must remain here.';
+      addDialogue(`${npc.name}: “${response}”`);
       return;
     }
     if (npc.rewardKeyItem) {
