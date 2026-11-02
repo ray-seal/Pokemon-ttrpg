@@ -82,12 +82,14 @@ function gateReason(state: GameState, node: KantoMapNode): string | undefined {
 export function getTravelOptions(state: GameState): TravelOption[] {
   const current = KANTO_MAP.find(node => node.key === state.player.location);
   if (!current) return [];
-  return current.connections.map(key => {
+  const options: TravelOption[] = [];
+  for (const key of current.connections) {
     const destination = KANTO_MAP.find(node => node.key === key);
-    if (!destination) return null;
+    if (!destination) continue;
     const reason = gateReason(state, destination);
-    return { key, name: destination.name, allowed: !reason, reason };
-  }).filter((item): item is TravelOption => item !== null);
+    options.push({ key, name: destination.name, allowed: !reason, reason });
+  }
+  return options;
 }
 
 export function getTravelOption(state: GameState, destination: string): TravelOption | undefined {
