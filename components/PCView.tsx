@@ -104,7 +104,8 @@ export default function PCView({ player, onSwap, onBack }: PCViewProps) {
                     {pokemon.currentHp}/{pokemon.maxHp} HP
                   </p>
                 </div>
-              </div>
+                <p className="text-xs text-center text-blue-300 mt-2">{selectedPC === idx ? 'Selected for swap' : 'Select to swap'}</p>
+              </button>
             ))}
           </div>
         )}
