@@ -14,10 +14,10 @@ A text-based Pokemon tabletop RPG adventure game based on Pokemon Red, featuring
 - **Team Management**: Build a team of up to 6 Pokemon with PC storage for extras
 
 ### Playable Opening Chapter
-- **Pallet Town to Pewter City**: begin with your chosen starter, meet Blue on Route 1, visit Viridian City, complete Oak's Parcel errand, and earn the Town Map from Daisy.
-- **NPC conversations**: talk to named residents for local knowledge, hints, and story progression. Some conversations use D20 ability checks.
+- **Pallet Town to Cerulean City**: begin with your chosen starter, meet Blue on Route 1, visit Viridian City, complete Oak's Parcel errand, earn the Town Map from Daisy, cross Route 3, explore Mt. Moon, and emerge on Route 4.
+- **NPC conversations**: talk to named residents for local knowledge, hints, and story progression. Some conversations use D20 ability checks. Defeat the fossil chamber guard, then choose either the Helix Fossil or Dome Fossil. The choice is one-time and saved.
 - **Trainer attributes**: Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma, each with a D20 modifier.
-- **Trainer battles**: challenge trainers on Route 2 and in Viridian Forest. Their teams, rewards, and defeated state persist in your save.
+- **Trainer battles**: challenge trainers on Route 2, Viridian Forest, Route 3, and inside Mt. Moon. Team Rocket grunts and Super Nerd Miguel guard the cave's fossil chamber. Their teams, rewards, and defeated state persist in your save.
 - **Multi-Pokémon battles**: trainer and Gym teams fight one Pokémon at a time. Your next healthy Pokémon automatically enters when one faints.
 - **Gym progression**: badges are awarded only after the Gym Leader's entire team is defeated. Viridian Gym is reserved for the late-game story.
 - **Weighted encounters**: rarity values act as relative weights, so less common Pokémon can actually appear.
@@ -48,7 +48,19 @@ A text-based Pokemon tabletop RPG adventure game based on Pokemon Red, featuring
 ### Save System
 - **Local Storage**: Game automatically saves the complete game state to browser localStorage (same browser/device)
 - **Continue Feature**: Pick up where you left off
-- **PWA Support**: Install as a Progressive Web App for offline play
+- **Independent PWA**: This repository is its own standalone installable app, with its own manifest, app icon, registered service worker, and offline app-shell caching
+
+## Current Playable Story
+
+The current playable chapter runs from Pallet Town through Viridian Forest and Pewter City, then continues along Route 3, through Mt. Moon, and out to Cerulean City. Route 3 and Mt. Moon include location-specific wild encounters, persistent trainer battles, NPC conversations, Team Rocket encounters, and a one-time Helix Fossil or Dome Fossil choice. Misty's Gym is available in Cerulean after earning the Boulder Badge.
+
+The wider Kanto map is a geographical framework. Locations beyond the current playable chapter are not yet fully populated with scenes, NPCs, trainers, quests, or encounters.
+
+## Standalone PWA
+
+Pokemon TTRPG is an independent application in this repository. It does not share a codebase, deployment, or save store with the other CardBuddy or companion-app projects. It can be deployed to its own Vercel project/domain and installed separately on mobile or desktop. Saves currently remain in the browser's local storage on that device; there is no account or cross-device sync.
+
+The service worker caches the app shell and same-origin Next.js static assets for offline use after the app has been loaded online. A first successful online visit is required before offline use can work reliably.
 
 ## Getting Started
 
