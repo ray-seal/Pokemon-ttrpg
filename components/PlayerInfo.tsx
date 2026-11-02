@@ -61,7 +61,7 @@ export default function PlayerInfo({ player }: PlayerInfoProps) {
 
       {player.keyItems.length > 0 && (
         <div className="mt-3 text-xs text-yellow-300">
-          Key Items: {player.keyItems.map(item => item === 'townMap' ? 'Town Map' : item).join(', ')}
+          Key Items: {player.keyItems.map(item => item === 'townMap' ? 'Town Map' : item === 'helixFossil' ? 'Helix Fossil' : item === 'domeFossil' ? 'Dome Fossil' : item).join(', ')}
         </div>
       )}
 
