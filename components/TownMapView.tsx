@@ -2,6 +2,7 @@
 
 import { GameState } from '@/types/game';
 import { KANTO_MAP, getMapStatus } from '@/lib/kantoMap';
+import { LOCATIONS } from '@/lib/locations';
 
 interface TownMapViewProps {
   gameState: GameState;
@@ -28,7 +29,8 @@ export default function TownMapView({ gameState, onBack }: TownMapViewProps) {
           </div>
           <button onClick={onBack} className="btn-secondary">Back to adventure</button>
         </div>
-        <p className="text-gray-300 mb-5">Your map records the wider region. Places you have visited, heard about, or cannot reach yet are marked separately.</p>
+        <p className="text-gray-300 mb-2">Your map records the wider region. Places you have visited, heard about, or cannot reach yet are marked separately.</p>
+        <p className="text-xs text-gray-500 mb-5">Some locations are charted for future chapters and are not playable yet.</p>
         <div className="flex flex-wrap gap-2 mb-5 text-xs">
           <span className="rounded bg-green-900 px-2 py-1">● You are here</span>
           <span className="rounded bg-blue-900 px-2 py-1">● Visited</span>
@@ -51,6 +53,7 @@ export default function TownMapView({ gameState, onBack }: TownMapViewProps) {
                       <span className="font-semibold">{node.name}</span>
                       <span className="text-xs text-gray-300">{statusText[status]}</span>
                     </div>
+                    {!LOCATIONS[node.key] && <p className="text-xs text-purple-300 mt-1">Mapped for a future chapter</p>}
                     {node.gate && status !== 'current' && (
                       <p className="text-xs text-gray-400 mt-1">{node.gate.message}</p>
                     )}

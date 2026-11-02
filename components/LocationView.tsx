@@ -63,11 +63,12 @@ export default function LocationView({
           <h3 className="font-bold mb-2">Nearby routes</h3>
           <div className="flex flex-wrap gap-2">
             {travelOptions.map(option => (
-              <button key={option.key} onClick={() => onTravel(option.key)} className="btn bg-gray-700 hover:bg-gray-600 text-sm">
-                {option.name} →
+              <button key={option.key} disabled={!option.allowed} title={option.reason} onClick={() => onTravel(option.key)} className="btn bg-gray-700 hover:bg-gray-600 text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                {option.name} {option.allowed ? '→' : '🔒'}
               </button>
             ))}
           </div>
+          {travelOptions.some(option => !option.allowed) && <p className="text-xs text-amber-300 mt-2">Some routes are blocked by story events or key items. Check your Town Map for details once you have it.</p>}
         </div>
       )}
     </div>
