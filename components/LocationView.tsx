@@ -28,7 +28,7 @@ interface LocationViewProps {
 }
 
 export default function LocationView({
-  location, onExplore, onGymChallenge, onPokemonCenter, onPokeMart, onPC,
+  location, onExplore, onGymChallenge, onPokemonCenter, onPokeMart, onPC, onTravel, travelOptions,
   npcs, trainers, defeatedTrainers, onTalkToNpc, onChallengeTrainer, canChallengeGym,
 }: LocationViewProps) {
   if (!location) return <div className="card">Location not found</div>;
