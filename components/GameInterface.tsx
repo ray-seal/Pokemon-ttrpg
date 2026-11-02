@@ -30,8 +30,10 @@ import BattleView from './BattleView';
 import PokedexView from './PokedexView';
 import PokeMartView from './PokeMartView';
 import PCView from './PCView';
+import TownMapView from './TownMapView';
+import { getTravelOptions, getTravelOption } from '@/lib/kantoMap';
 
-type GameView = 'map' | 'battle' | 'pokedex' | 'pokemart' | 'pokemoncenter' | 'pc';
+type GameView = 'map' | 'battle' | 'pokedex' | 'pokemart' | 'pokemoncenter' | 'pc' | 'townmap';
 
 interface GameInterfaceProps {
   gameState: GameState;
@@ -56,6 +58,8 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
   }, []);
 
   const currentLocation = getLocation(gameState.player.location);
+  const hasTownMap = gameState.player.keyItems?.includes('townMap') || false;
+  const travelOptions = getTravelOptions(gameState).filter(option => !!getLocation(option.key));
 
   const addDialogue = (text: string) => {
     setGameState({
@@ -403,14 +407,53 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
   };
 
   const handleTravel = (destination: string) => {
+    const option = getTravelOption(gameState, destination);
+    if (!option || !option.allowed) {
+      addDialogue(option?.reason || 'You cannot travel that way.');
+      return;
+    }
+    const knowledge = gameState.worldKnowledge || { knownLocations: [], discoveredLocations: [] };
+    const neighbors = getTravelOptions({ ...gameState, player: { ...gameState.player, location: destination } }).map(item => item.key);
     setGameState({
       ...gameState,
-      player: {
-        ...gameState.player,
-        location: destination,
+      player: { ...gameState.player, location: destination },
+      worldKnowledge: {
+        knownLocations: Array.from(new Set([...knowledge.knownLocations, destination, ...neighbors])),
+        discoveredLocations: Array.from(new Set([...knowledge.discoveredLocations, destination])),
       },
+      dialogueHistory: [...gameState.dialogueHistory, `You travel to ${getLocation(destination)?.name || destination}.`],
     });
-    addDialogue(`Traveled to ${getLocation(destination)?.name}`);
+  };
+
+  const handleCollectParcel = () => {
+    if (gameState.player.location !== 'viridianCity' || gameState.storyFlags?.oakParcelCollected || gameState.storyFlags?.oakParcelDelivered) return;
+    setGameState({
+      ...gameState,
+      storyFlags: { ...gameState.storyFlags, oakParcelCollected: true },
+      dialogueHistory: [...gameState.dialogueHistory, 'The Viridian City Poké Mart clerk hands you a parcel for Professor Oak. “Could you take this back to the lab in Pallet Town?”'],
+    });
+  };
+
+  const handleDeliverParcel = () => {
+    if (gameState.player.location !== 'palletTown' || !gameState.storyFlags?.oakParcelCollected || gameState.storyFlags?.oakParcelDelivered) return;
+    setGameState({
+      ...gameState,
+      storyFlags: { ...gameState.storyFlags, oakParcelCollected: false, oakParcelDelivered: true },
+      dialogueHistory: [...gameState.dialogueHistory, 'Professor Oak is delighted to get his parcel. He thanks you and mentions that Daisy, Blue’s sister, has something useful for a new trainer.'],
+    });
+  };
+
+  const handleTalkToDaisy = () => {
+    if (gameState.player.location !== 'palletTown' || !gameState.storyFlags?.oakParcelDelivered || hasTownMap) return;
+    setGameState({
+      ...gameState,
+      player: { ...gameState.player, keyItems: [...(gameState.player.keyItems || []), 'townMap'] },
+      dialogueHistory: [
+        ...gameState.dialogueHistory,
+        'Daisy smiles and hands you a Town Map. “You’ll want to know your way around Kanto. Keep it safe!”',
+        'Town Map added to Key Items. The Map button is now available.',
+      ],
+    });
   };
 
   const handleBuyItem = (itemKey: keyof typeof gameState.player.inventory, price: number) => {
@@ -438,6 +481,10 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
         onAction={handleBattleAction}
       />
     );
+  }
+
+  if (currentView === 'townmap') {
+    return <TownMapView gameState={gameState} onBack={() => setCurrentView('map')} />;
   }
 
   if (currentView === 'pokedex') {
@@ -486,9 +533,17 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
         onPokeMart={() => setCurrentView('pokemart')}
         onPC={() => setCurrentView('pc')}
         onTravel={handleTravel}
+        travelOptions={travelOptions}
+        showCollectParcel={gameState.player.location === 'viridianCity' && !gameState.storyFlags?.oakParcelCollected && !gameState.storyFlags?.oakParcelDelivered}
+        showDeliverParcel={gameState.player.location === 'palletTown' && !!gameState.storyFlags?.oakParcelCollected}
+        showTalkToDaisy={gameState.player.location === 'palletTown' && !!gameState.storyFlags?.oakParcelDelivered && !hasTownMap}
+        onCollectParcel={handleCollectParcel}
+        onDeliverParcel={handleDeliverParcel}
+        onTalkToDaisy={handleTalkToDaisy}
       />
 
       <div className="mt-4 flex flex-wrap gap-2">
+        {hasTownMap && <button onClick={() => setCurrentView('townmap')} className="btn-primary">🗺️ Town Map</button>}
         <button onClick={() => setCurrentView('pokedex')} className="btn-secondary">
           Pokedex
         </button>

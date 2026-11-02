@@ -27,6 +27,7 @@ export function createNewGame(playerName: string, starterPokemon: Pokemon): Game
       revive: 0,
     },
     pokedex: initialPokedex,
+    keyItems: [],
   };
   
   return {
@@ -38,6 +39,12 @@ export function createNewGame(playerName: string, starterPokemon: Pokemon): Game
     ],
     storyFlags: {
       rivalBattleRoute1: false,
+      oakParcelCollected: false,
+      oakParcelDelivered: false,
+    },
+    worldKnowledge: {
+      knownLocations: ['palletTown', 'route1', 'viridianCity', 'route22'],
+      discoveredLocations: ['palletTown'],
     },
   };
 }
@@ -52,13 +59,22 @@ export function loadGame(): GameState | null {
     
     const gameState: GameState = JSON.parse(savedData);
     
-    // Backward compatibility: Initialize storyFlags if missing
-    if (!gameState.storyFlags) {
-      gameState.storyFlags = {
-        rivalBattleRoute1: false,
-      };
-    }
-    
+    // Migrate saves created by earlier versions.
+    gameState.storyFlags = {
+      rivalBattleRoute1: false,
+      oakParcelCollected: false,
+      oakParcelDelivered: false,
+      ...(gameState.storyFlags || {}),
+    };
+    gameState.player.keyItems = gameState.player.keyItems || [];
+    gameState.worldKnowledge = gameState.worldKnowledge || {
+      knownLocations: ['palletTown', 'route1', 'viridianCity', 'route22'],
+      discoveredLocations: [gameState.player.location || 'palletTown'],
+    };
+    gameState.worldKnowledge.discoveredLocations = Array.from(new Set([
+      ...gameState.worldKnowledge.discoveredLocations,
+      gameState.player.location,
+    ]));
     return gameState;
   } catch (error) {
     console.error('Error loading game:', error);

@@ -61,6 +61,7 @@ export interface Player {
   location: string;
   inventory: Inventory;
   pokedex: PokedexStatus;
+  keyItems: string[];
 }
 
 export interface Inventory {
@@ -139,6 +140,12 @@ export interface GameState {
   dialogueHistory: string[];
   storyFlags?: {
     rivalBattleRoute1?: boolean;
+    oakParcelCollected?: boolean;
+    oakParcelDelivered?: boolean;
     [key: string]: boolean | undefined;
+  };
+  worldKnowledge?: {
+    knownLocations: string[];
+    discoveredLocations: string[];
   };
 }
