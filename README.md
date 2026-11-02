@@ -13,6 +13,16 @@ A text-based Pokemon tabletop RPG adventure game based on Pokemon Red, featuring
 - **Leveling & Evolution**: Pokemon gain experience, level up, learn new moves, and evolve
 - **Team Management**: Build a team of up to 6 Pokemon with PC storage for extras
 
+### Playable Opening Chapter
+- **Pallet Town to Pewter City**: begin with your chosen starter, meet Blue on Route 1, visit Viridian City, complete Oak's Parcel errand, and earn the Town Map from Daisy.
+- **NPC conversations**: talk to named residents for local knowledge, hints, and story progression. Some conversations use D20 ability checks.
+- **Trainer attributes**: Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma, each with a D20 modifier.
+- **Trainer battles**: challenge trainers on Route 2 and in Viridian Forest. Their teams, rewards, and defeated state persist in your save.
+- **Multi-Pokémon battles**: trainer and Gym teams fight one Pokémon at a time. Your next healthy Pokémon automatically enters when one faints.
+- **Gym progression**: badges are awarded only after the Gym Leader's entire team is defeated. Viridian Gym is reserved for the late-game story.
+- **Weighted encounters**: rarity values act as relative weights, so less common Pokémon can actually appear.
+- **Persistent world state**: story flags, NPC conversations, trainer victories, map discoveries, key items, attributes, party, PC, and an in-progress battle are saved locally.
+
 ### Game World
 - **Kanto Region**: Travel through iconic locations from Pokemon Red including:
   - Pallet Town, Viridian City, Pewter City, Cerulean City, and more
@@ -36,7 +46,7 @@ A text-based Pokemon tabletop RPG adventure game based on Pokemon Red, featuring
 - **Pokemon Centers**: Heal your team for free at Pokemon Centers
 
 ### Save System
-- **Local Storage**: Game automatically saves to browser localStorage
+- **Local Storage**: Game automatically saves the complete game state to browser localStorage (same browser/device)
 - **Continue Feature**: Pick up where you left off
 - **PWA Support**: Install as a Progressive Web App for offline play
 

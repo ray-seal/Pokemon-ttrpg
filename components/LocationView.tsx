@@ -1,6 +1,6 @@
 'use client';
 
-import { Location } from '@/types/game';
+import { Location, NPC, TrainerEncounter } from '@/types/game';
 
 interface TravelOption {
   key: string;
@@ -19,18 +19,17 @@ interface LocationViewProps {
   onPC: () => void;
   onTravel: (destination: string) => void;
   travelOptions: TravelOption[];
-  showCollectParcel: boolean;
-  showDeliverParcel: boolean;
-  showTalkToDaisy: boolean;
-  onCollectParcel: () => void;
-  onDeliverParcel: () => void;
-  onTalkToDaisy: () => void;
+  npcs: NPC[];
+  trainers: TrainerEncounter[];
+  defeatedTrainers: string[];
+  onTalkToNpc: (npcId: string) => void;
+  onChallengeTrainer: (trainerId: string) => void;
+  canChallengeGym: boolean;
 }
 
 export default function LocationView({
   location, onExplore, onGymChallenge, onPokemonCenter, onPokeMart, onPC,
-  onTravel, travelOptions, showCollectParcel, showDeliverParcel, showTalkToDaisy,
-  onCollectParcel, onDeliverParcel, onTalkToDaisy,
+  npcs, trainers, defeatedTrainers, onTalkToNpc, onChallengeTrainer, canChallengeGym,
 }: LocationViewProps) {
   if (!location) return <div className="card">Location not found</div>;
 
@@ -43,20 +42,43 @@ export default function LocationView({
         {location.wildPokemon && location.wildPokemon.length > 0 && (
           <button onClick={onExplore} className="btn-success py-3">🌿 Explore Grass</button>
         )}
-        {location.hasGym && <button onClick={onGymChallenge} className="btn-primary py-3">🥋 Challenge Gym</button>}
+        {canChallengeGym && <button onClick={onGymChallenge} className="btn-primary py-3">🥋 Challenge Gym</button>}
         {location.hasPokemonCenter && <button onClick={onPokemonCenter} className="btn-secondary py-3">🏥 Pokémon Center</button>}
         {location.hasPokemonCenter && <button onClick={onPC} className="btn-secondary py-3">💻 PC</button>}
         {location.hasPokeMart && <button onClick={onPokeMart} className="btn-secondary py-3">🏪 Poké Mart</button>}
       </div>
 
-      {(showCollectParcel || showDeliverParcel || showTalkToDaisy) && (
-        <div className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-4">
-          <h3 className="font-bold mb-2">📜 A little business to take care of</h3>
-          {showCollectParcel && <button onClick={onCollectParcel} className="btn-primary py-2">Collect Oak&apos;s Parcel</button>}
-          {showDeliverParcel && <button onClick={onDeliverParcel} className="btn-primary py-2">Deliver the parcel to Professor Oak</button>}
-          {showTalkToDaisy && <button onClick={onTalkToDaisy} className="btn-primary py-2">Speak to Daisy at the rival&apos;s house</button>}
-        </div>
+      {npcs.length > 0 && (
+        <section className="mt-4 rounded-lg border border-blue-500/30 bg-blue-950/20 p-4">
+          <h3 className="font-bold mb-3">People nearby</h3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {npcs.map(npc => (
+              <button key={npc.id} onClick={() => onTalkToNpc(npc.id)} className="rounded-lg bg-gray-800 p-3 text-left hover:bg-gray-700">
+                <span className="block font-semibold">💬 {npc.name}</span>
+                <span className="block text-xs text-gray-400">{npc.role}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       )}
+
+      {trainers.length > 0 && (
+        <section className="mt-4 rounded-lg border border-orange-500/30 bg-orange-950/20 p-4">
+          <h3 className="font-bold mb-3">Trainers in the area</h3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {trainers.map(trainer => {
+              const defeated = defeatedTrainers.includes(trainer.id);
+              return (
+                <div key={trainer.id} className="rounded-lg bg-gray-800 p-3 flex items-center justify-between gap-2">
+                  <div><span className="block font-semibold">{trainer.name}</span><span className="text-xs text-gray-400">{trainer.team.length} Pokémon · {defeated ? 'Defeated' : 'Ready to battle'}</span></div>
+                  <button disabled={defeated} onClick={() => onChallengeTrainer(trainer.id)} className="btn-primary text-sm disabled:opacity-40">{defeated ? 'Won' : 'Battle'}</button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
 
       {travelOptions.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-700">

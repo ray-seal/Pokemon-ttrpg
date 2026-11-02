@@ -63,14 +63,14 @@ export const GYM_LEADERS: { [key: string]: GymLeader } = {
         moves: [MOVES.tackle, MOVES.rockThrow],
       },
       {
-        id: 74,
-        name: 'Geodude',
+        id: 95,
+        name: 'Onix',
         types: ['Rock', 'Ground'],
-        baseStats: { hp: 40, attack: 80, defense: 100, specialAttack: 30, specialDefense: 30, speed: 20 },
+        baseStats: { hp: 35, attack: 45, defense: 160, specialAttack: 30, specialDefense: 45, speed: 70 },
         level: 14,
         exp: 0,
-        maxHp: 48,
-        currentHp: 48,
+        maxHp: 42,
+        currentHp: 42,
         moves: [MOVES.tackle, MOVES.rockThrow],
       },
     ],
@@ -267,6 +267,10 @@ export const LOCATIONS: { [key: string]: Location } = {
     description: 'A quiet town. The smell of the sea is refreshing.',
     hasPokemonCenter: true,
     connectedTo: ['route1'],
+    npcs: [
+      { id: 'oak-pallet', name: 'Professor Oak', role: 'Pokémon Professor', dialogue: 'The world is full of Pokémon waiting to be discovered. Look after your starter and remember that a good trainer learns by observing.', repeatDialogue: 'Keep your eyes open out there. Kanto is full of surprises.' },
+      { id: 'daisy-pallet', name: 'Daisy', role: 'Blue’s sister', dialogue: 'Blue is always talking about becoming the greatest trainer. Try not to let his big head put you off. Come back after you have helped Grandpa with his parcel.', repeatDialogue: 'Bring Grandpa his parcel and I might have something useful for you.' },
+    ],
   },
   route1: {
     name: 'Route 1',
@@ -282,30 +286,44 @@ export const LOCATIONS: { [key: string]: Location } = {
     description: 'A beautiful city surrounded by green trees.',
     hasPokemonCenter: true,
     hasPokeMart: true,
-    hasGym: true,
+    hasGym: false,
     gymLeader: GYM_LEADERS.giovanni,
     connectedTo: ['route1', 'route2', 'route22'],
+    npcs: [
+      { id: 'viridian-old-man', name: 'Old Man', role: 'Local resident', dialogue: 'The road north leads through Viridian Forest to Pewter City. Watch your step in the tall grass. Wild Pokémon can be unpredictable.', repeatDialogue: 'Remember, the Pokémon Centre can restore your team.', checkAttribute: 'wisdom', checkDifficulty: 10, successDialogue: 'The old man leans closer. “There is a quiet path west of town. Trainers sometimes use Route 22 to prepare before heading north.”', failureDialogue: 'The old man launches into a rambling story about the good old days. You cannot quite follow his directions.' },
+      { id: 'viridian-clerk', name: 'Poké Mart Clerk', role: 'Shop assistant', dialogue: 'Welcome! We have supplies for trainers. There is also a parcel here for Professor Oak. Could you take it back to Pallet Town?', repeatDialogue: 'Professor Oak is waiting for that parcel. Best get it back to him.' },
+    ],
   },
   route2: {
     name: 'Route 2',
     description: 'A route with a small path that winds down through the forest.',
     wildPokemon: [
-      { pokemonId: 16, minLevel: 3, maxLevel: 5, rarity: 50 },
-      { pokemonId: 19, minLevel: 3, maxLevel: 5, rarity: 30 },
-      { pokemonId: 10, minLevel: 3, maxLevel: 5, rarity: 10 },
-      { pokemonId: 13, minLevel: 3, maxLevel: 5, rarity: 10 },
+      { pokemonId: 16, minLevel: 3, maxLevel: 5, rarity: 60 },
+      { pokemonId: 19, minLevel: 3, maxLevel: 5, rarity: 40 },
     ],
-    connectedTo: ['viridianCity', 'viridianForest', 'pewterCity'],
+    connectedTo: ['viridianCity', 'viridianForest'],
+    npcs: [
+      { id: 'route2-hiker', name: 'Young Hiker', role: 'Trainer in training', dialogue: 'I heard there are tiny Pokémon hiding in the forest. I am working up the courage to go in. Bug Pokémon can be surprisingly tough!', repeatDialogue: 'Still building up the courage. Maybe tomorrow.', checkAttribute: 'intelligence', checkDifficulty: 11, successDialogue: 'You spot a flash of yellow fur in the forest canopy. “Pikachu?” the hiker whispers. “They are rare, but they do live in there.”', failureDialogue: 'The hiker points vaguely at the trees. You cannot work out what he is trying to describe.' },
+    ],
+    trainers: [
+      { id: 'route2-lass-molly', name: 'Lass Molly', reward: 180, intro: 'Lass Molly: My Pokémon are small, but they are full of spirit!', victory: 'Lass Molly: You have got a good team. I need to train harder.', team: [{ id: 16, name: 'Pidgey', types: ['Normal', 'Flying'], baseStats: { hp: 40, attack: 45, defense: 40, specialAttack: 35, specialDefense: 35, speed: 56 }, level: 5, exp: 0, maxHp: 20, currentHp: 20, moves: [MOVES.tackle, MOVES.gust] }] },
+    ],
   },
   viridianForest: {
     name: 'Viridian Forest',
     description: 'A dense forest filled with Bug Pokemon.',
     wildPokemon: [
-      { pokemonId: 10, minLevel: 3, maxLevel: 5, rarity: 40 },
-      { pokemonId: 13, minLevel: 3, maxLevel: 5, rarity: 40 },
-      { pokemonId: 25, minLevel: 3, maxLevel: 5, rarity: 20 },
+      { pokemonId: 10, minLevel: 3, maxLevel: 5, rarity: 45 },
+      { pokemonId: 13, minLevel: 3, maxLevel: 5, rarity: 45 },
+      { pokemonId: 25, minLevel: 3, maxLevel: 5, rarity: 10 },
     ],
-    connectedTo: ['route2'],
+    connectedTo: ['route2', 'pewterCity'],
+    npcs: [
+      { id: 'forest-bug-catcher', name: 'Bug Catcher', role: 'Young trainer', dialogue: 'Viridian Forest is crawling with Bug Pokémon. Caterpie and Weedle are common, but keep an eye out for Pikachu too!', repeatDialogue: 'A good Bug Catcher knows every rustle in the leaves.' },
+    ],
+    trainers: [
+      { id: 'forest-bug-catcher-sam', name: 'Bug Catcher Sam', reward: 220, intro: 'Bug Catcher Sam: My bugs are ready! Let’s battle!', victory: 'Bug Catcher Sam: You squashed me fair and square. I will train them up!', team: [{ id: 10, name: 'Caterpie', types: ['Bug'], baseStats: { hp: 45, attack: 30, defense: 35, specialAttack: 20, specialDefense: 20, speed: 45 }, level: 5, exp: 0, maxHp: 20, currentHp: 20, moves: [MOVES.tackle] }, { id: 13, name: 'Weedle', types: ['Bug', 'Poison'], baseStats: { hp: 40, attack: 35, defense: 30, specialAttack: 20, specialDefense: 20, speed: 50 }, level: 5, exp: 0, maxHp: 19, currentHp: 19, moves: [MOVES.poisonSting] }] },
+    ],
   },
   pewterCity: {
     name: 'Pewter City',
@@ -314,7 +332,11 @@ export const LOCATIONS: { [key: string]: Location } = {
     hasPokeMart: true,
     hasGym: true,
     gymLeader: GYM_LEADERS.brock,
-    connectedTo: ['route2', 'route3'],
+    connectedTo: ['viridianForest', 'route3'],
+    npcs: [
+      { id: 'pewter-guide', name: 'Museum Volunteer', role: 'Local guide', dialogue: 'Pewter City is proud of its museum. Brock, our Gym Leader, specialises in Rock Pokémon. Water and Grass moves are useful against them.', repeatDialogue: 'The museum is to the north. Brock’s Gym is ready when you are.', checkAttribute: 'charisma', checkDifficulty: 12, successDialogue: 'The volunteer warms to you and shares a useful tip: Brock’s Rock Pokémon are vulnerable to Water and Grass attacks. Onix is especially tough physically.', failureDialogue: 'The volunteer gives you a polite nod but seems too busy to offer more than directions to the museum.' },
+      { id: 'pewter-child', name: 'Young Trainer', role: 'Local child', dialogue: 'I want to be strong like Brock one day! Have you visited the Pokémon Centre? It is always worth healing before a Gym challenge.', repeatDialogue: 'I am going to be a Gym Leader one day!' },
+    ],
   },
   route3: {
     name: 'Route 3',

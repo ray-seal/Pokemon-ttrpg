@@ -46,6 +46,25 @@ export default function PlayerInfo({ player }: PlayerInfoProps) {
         </div>
       </div>
       
+      <div className="mt-4 pt-3 border-t border-gray-700">
+        <h3 className="font-bold mb-2 text-sm">Trainer Attributes</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs">
+          {Object.entries(player.attributes || { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 }).map(([name, score]) => (
+            <div key={name} className="rounded bg-gray-800 p-2 text-center">
+              <span className="block capitalize text-gray-400">{name}</span>
+              <span className="font-bold">{score}</span>
+              <span className="block text-gray-500">{Math.floor((score - 10) / 2) >= 0 ? '+' : ''}{Math.floor((score - 10) / 2)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {player.keyItems.length > 0 && (
+        <div className="mt-3 text-xs text-yellow-300">
+          Key Items: {player.keyItems.map(item => item === 'townMap' ? 'Town Map' : item).join(', ')}
+        </div>
+      )}
+
       {/* Inventory quick view */}
       <div className="mt-4 pt-4 border-t border-gray-700">
         <h3 className="font-bold mb-2 text-sm">Quick Inventory</h3>

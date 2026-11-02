@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Player } from '@/types/game';
 
 interface PCViewProps {
@@ -9,6 +10,16 @@ interface PCViewProps {
 }
 
 export default function PCView({ player, onSwap, onBack }: PCViewProps) {
+  const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
+  const [selectedPC, setSelectedPC] = useState<number | null>(null);
+  const chooseTeam = (index: number) => {
+    setSelectedTeam(index);
+    if (selectedPC !== null) { onSwap(index, selectedPC); setSelectedTeam(null); setSelectedPC(null); }
+  };
+  const choosePC = (index: number) => {
+    setSelectedPC(index);
+    if (selectedTeam !== null) { onSwap(selectedTeam, index); setSelectedTeam(null); setSelectedPC(null); }
+  };
   return (
     <div className="min-h-screen bg-gray-900 p-4">
       <div className="card mb-4">
@@ -25,7 +36,7 @@ export default function PCView({ player, onSwap, onBack }: PCViewProps) {
         <h3 className="text-xl font-bold mb-3">Your Team</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {player.team.map((pokemon, idx) => (
-            <div key={idx} className="pokemon-card p-3">
+            <button type="button" key={idx} onClick={() => chooseTeam(idx)} className="pokemon-card p-3 text-left w-full">
               <div className="text-center text-4xl mb-2">
                 {pokemon.types[0] === 'Fire' && '🔥'}
                 {pokemon.types[0] === 'Water' && '💧'}
@@ -52,7 +63,8 @@ export default function PCView({ player, onSwap, onBack }: PCViewProps) {
                   {pokemon.currentHp}/{pokemon.maxHp} HP
                 </p>
               </div>
-            </div>
+              <p className="text-xs text-center text-blue-300 mt-2">{selectedTeam === idx ? 'Selected for swap' : 'Select to swap'}</p>
+            </button>
           ))}
         </div>
       </div>
@@ -65,7 +77,7 @@ export default function PCView({ player, onSwap, onBack }: PCViewProps) {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {player.pc.map((pokemon, idx) => (
-              <div key={idx} className="pokemon-card p-3">
+              <button type="button" key={idx} onClick={() => choosePC(idx)} className="pokemon-card p-3 text-left w-full">
                 <div className="text-center text-4xl mb-2">
                   {pokemon.types[0] === 'Fire' && '🔥'}
                   {pokemon.types[0] === 'Water' && '💧'}
@@ -100,7 +112,7 @@ export default function PCView({ player, onSwap, onBack }: PCViewProps) {
 
       <div className="card mt-4 bg-blue-900">
         <p className="text-sm text-gray-300">
-          💡 Tip: Pokemon swapping feature is available. Keep your strongest Pokemon in your team!
+          💡 Select one Pokémon in your team, then one in PC Storage to swap them. Your party must always contain at least one Pokémon.
         </p>
       </div>
     </div>

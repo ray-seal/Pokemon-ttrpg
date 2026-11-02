@@ -13,6 +13,8 @@ import {
   healPokemon,
   rollDice,
   calculateCatchRate,
+  selectWeightedEncounter,
+  rollAbilityCheck,
 } from '@/lib/gameLogic';
 import {
   addPokemonToTeam,
@@ -22,6 +24,7 @@ import {
   useItem,
   addItem,
   getPokedexStats,
+  swapPokemon,
 } from '@/lib/gameState';
 import { POKEDEX } from '@/lib/pokedex';
 import PlayerInfo from './PlayerInfo';
@@ -41,25 +44,48 @@ interface GameInterfaceProps {
 }
 
 export default function GameInterface({ gameState, setGameState }: GameInterfaceProps) {
-  const [currentView, setCurrentView] = useState<GameView>('map');
+  const [currentView, setCurrentView] = useState<GameView>(gameState.currentBattle ? 'battle' : 'map');
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const [selectedMove, setSelectedMove] = useState<Move | null>(null);
 
-  // Ensure storyFlags are initialized
+  // Migrate older saves without resetting existing story progress.
   useEffect(() => {
-    if (!gameState.storyFlags) {
-      setGameState({
-        ...gameState,
-        storyFlags: {
-          rivalBattleRoute1: false,
-        },
-      });
-    }
+    const migrated = {
+      ...gameState,
+      storyFlags: {
+        rivalBattleRoute1: false,
+        oakParcelCollected: false,
+        oakParcelDelivered: false,
+        ...(gameState.storyFlags || {}),
+      },
+      player: { ...gameState.player, keyItems: gameState.player.keyItems || [], attributes: gameState.player.attributes || { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 } },
+      npcFlags: gameState.npcFlags || {},
+      trainerFlags: gameState.trainerFlags || {},
+      gymBadges: gameState.gymBadges || [],
+      worldKnowledge: gameState.worldKnowledge || {
+        knownLocations: ['palletTown', 'route1', 'viridianCity', 'route22'],
+        discoveredLocations: [gameState.player.location || 'palletTown'],
+      },
+    };
+    if (
+      !gameState.storyFlags || !gameState.npcFlags || !gameState.trainerFlags ||
+      !gameState.gymBadges || !gameState.player.keyItems || !gameState.player.attributes || !gameState.worldKnowledge
+    ) setGameState(migrated);
   }, []);
+
 
   const currentLocation = getLocation(gameState.player.location);
   const hasTownMap = gameState.player.keyItems?.includes('townMap') || false;
   const travelOptions = getTravelOptions(gameState).filter(option => !!getLocation(option.key));
+  const gymBadgeOrder = ['Boulder Badge', 'Cascade Badge', 'Thunder Badge', 'Rainbow Badge', 'Soul Badge', 'Marsh Badge', 'Volcano Badge', 'Earth Badge'];
+  const currentGymBadge = currentLocation?.gymLeader?.badge;
+  const gymRequirement = currentGymBadge ? Math.max(0, gymBadgeOrder.indexOf(currentGymBadge)) : 0;
+  const isViridianFinalGym = gameState.player.location === 'viridianCity';
+  const viridianGymUnlocked = gameState.player.badges >= 7 && !!gameState.storyFlags?.rocketHideoutCleared;
+  const canChallengeGym = !!currentLocation?.gymLeader &&
+    (!!currentLocation.hasGym || (isViridianFinalGym && viridianGymUnlocked)) &&
+    gameState.player.badges >= gymRequirement &&
+    !gameState.gymBadges?.includes(currentGymBadge || '');
 
   const addDialogue = (text: string) => {
     setGameState({
@@ -69,66 +95,44 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
   };
 
   const handleExploreGrass = () => {
-    console.log('Explore grass clicked');
-    console.log('Current location:', gameState.player.location);
-    console.log('Story flags:', gameState.storyFlags);
-    console.log('Rival battle completed?', gameState.storyFlags?.rivalBattleRoute1);
-    
-    // Check for Route 1 rival battle (tutorial - first time only)
-    if (gameState.player.location === 'route1' && !gameState.storyFlags?.rivalBattleRoute1) {
-      console.log('Triggering rival battle!');
-      const rival = RIVAL_TRAINERS.route1Rival;
-      
-      const introDialogue = rival.dialogue.intro.replace('{playerName}', gameState.player.name);
-      addDialogue(introDialogue);
-      addDialogue('This is a Pokemon battle! Choose your moves wisely and watch your HP!');
+    if (!currentLocation?.wildPokemon?.length) {
+      addDialogue('There are no wild Pokémon in this area.');
+      return;
+    }
 
-      setGameState({
+    // The Route 1 rival encounter is a one-time story beat.
+    if (gameState.player.location === 'route1' && !gameState.storyFlags?.rivalBattleRoute1) {
+      const rival = RIVAL_TRAINERS.route1Rival;
+      const playerStarterId = gameState.player.team[0]?.id;
+      const rivalStarterId = playerStarterId === 1 ? 4 : playerStarterId === 4 ? 7 : 1;
+      const rivalPokemon = generateWildPokemon(rivalStarterId, 5);
+      const intro = rival.dialogue.intro.replace('{playerName}', gameState.player.name);
+      const openingState = {
         ...gameState,
+        player: markPokemonSeen(gameState.player, rivalPokemon.id),
         currentBattle: {
-          opponent: rival.team.map(p => ({ ...p })),
+          opponent: [rivalPokemon],
           isGym: false,
           isWild: false,
           isRival: true,
           trainerName: rival.name,
           currentTurn: 0,
+          activePlayerIndex: Math.max(0, gameState.player.team.findIndex(p => p.currentHp > 0)),
+          activeOpponentIndex: 0,
+          reward: rival.reward,
         },
-      });
-
-      setBattleLog([
-        `${rival.name} challenges you to your first Pokemon battle!`,
-        `${gameState.player.name} sent out ${gameState.player.team[0].name}!`,
-        `${rival.name} sent out ${rival.team[0].name}!`,
-        '--- TUTORIAL BATTLE ---',
-        'TIP: Click on a move to attack. Different types are strong or weak against each other!',
-      ]);
+        dialogueHistory: [...gameState.dialogueHistory, intro, 'Blue grins. “Come on then. Let’s see what your starter can do!”'],
+      };
+      setGameState(openingState);
+      setBattleLog([intro, `${rival.name} sends out ${rivalPokemon.name}!`, 'Your first trainer battle begins.']);
       setCurrentView('battle');
       return;
     }
 
-    if (!currentLocation?.wildPokemon || currentLocation.wildPokemon.length === 0) {
-      addDialogue('There are no wild Pokemon in this area.');
-      return;
-    }
-
-    const roll = rollDice(100);
-    
-    // Find the first encounter that matches the roll
-    let encounter = currentLocation.wildPokemon.find(
-      (enc) => roll <= enc.rarity
-    );
-    
-    // Fallback to most common Pokemon (highest rarity) if none match
-    if (!encounter) {
-      encounter = currentLocation.wildPokemon.reduce((prev, current) => 
-        (current.rarity > prev.rarity) ? current : prev
-      );
-    }
-
+    const encounter = selectWeightedEncounter(currentLocation.wildPokemon, rollDice(100));
+    if (!encounter) return;
     const level = encounter.minLevel + Math.floor(Math.random() * (encounter.maxLevel - encounter.minLevel + 1));
     const wildPokemon = generateWildPokemon(encounter.pokemonId, level);
-
-    // Mark as seen in Pokedex
     setGameState({
       ...gameState,
       player: markPokemonSeen(gameState.player, wildPokemon.id),
@@ -137,272 +141,278 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
         isGym: false,
         isWild: true,
         currentTurn: 0,
+        activePlayerIndex: Math.max(0, gameState.player.team.findIndex(p => p.currentHp > 0)),
+        activeOpponentIndex: 0,
       },
     });
-
-    setBattleLog([
-      `A wild ${wildPokemon.name} appeared! (Level ${wildPokemon.level})`,
-      `${gameState.player.name} sent out ${gameState.player.team[0].name}!`,
-    ]);
+    setBattleLog([`A wild ${wildPokemon.name} appeared! (Level ${wildPokemon.level})`, `${gameState.player.name} sends out ${gameState.player.team[0].name}!`]);
     setCurrentView('battle');
   };
 
   const handleGymChallenge = () => {
-    if (!currentLocation?.hasGym || !currentLocation.gymLeader) {
-      addDialogue('There is no gym in this location.');
+    if (!currentLocation?.gymLeader) {
+      addDialogue('There is no Gym Leader here.');
       return;
     }
-
-    const gymLeader = currentLocation.gymLeader;
-    
-    // Check if already beaten (simplified - could track individually)
-    addDialogue(gymLeader.dialogue.intro.replace('{playerName}', gameState.player.name));
-
+    const isViridianFinalGym = gameState.player.location === 'viridianCity';
+    if (isViridianFinalGym && !viridianGymUnlocked) {
+      addDialogue('The Viridian Gym is closed. Rumours say its leader will not appear until the other seven badges have been earned and Team Rocket has been dealt with.');
+      return;
+    }
+    const badgeName = currentLocation.gymLeader.badge;
+    const requiredBadges = Math.max(0, gymBadgeOrder.indexOf(badgeName));
+    if (gameState.player.badges < requiredBadges) {
+      addDialogue('The Gym Leader will not accept your challenge yet. Earn ' + gymBadgeOrder[requiredBadges - 1] + ' first.');
+      return;
+    }
+    if (gameState.gymBadges?.includes(badgeName)) {
+      addDialogue(`You already earned the ${badgeName}.`);
+      return;
+    }
+    const leader = currentLocation.gymLeader;
     setGameState({
       ...gameState,
+      player: leader.team.reduce((player, pokemon) => markPokemonSeen(player, pokemon.id), gameState.player),
       currentBattle: {
-        opponent: gymLeader.team.map(p => ({ ...p })),
+        opponent: leader.team.map(p => ({ ...p, moves: p.moves.map(m => ({ ...m })) })),
         isGym: true,
         isWild: false,
+        trainerName: leader.name,
         currentTurn: 0,
+        activePlayerIndex: Math.max(0, gameState.player.team.findIndex(p => p.currentHp > 0)),
+        activeOpponentIndex: 0,
       },
+      dialogueHistory: [...gameState.dialogueHistory, leader.dialogue.intro.replace('{playerName}', gameState.player.name)],
     });
-
-    setBattleLog([
-      `${gymLeader.name} challenges you!`,
-      `${gameState.player.name} sent out ${gameState.player.team[0].name}!`,
-      `${gymLeader.name} sent out ${gymLeader.team[0].name}!`,
-    ]);
+    setBattleLog([`${leader.name} challenges you!`, `${leader.name} sends out ${leader.team[0].name}!`]);
     setCurrentView('battle');
   };
 
-  const handleBattleAction = (action: 'fight' | 'catch' | 'run', move?: Move) => {
-    if (!gameState.currentBattle) return;
+  const handleChallengeTrainer = (trainerId: string) => {
+    const trainer = currentLocation?.trainers?.find(item => item.id === trainerId);
+    if (!trainer || gameState.trainerFlags?.[trainerId]) return;
+    setGameState({
+      ...gameState,
+      player: trainer.team.reduce((player, pokemon) => markPokemonSeen(player, pokemon.id), gameState.player),
+      currentBattle: {
+        opponent: trainer.team.map(p => ({ ...p, moves: p.moves.map(m => ({ ...m })) })),
+        isGym: false,
+        isWild: false,
+        trainerName: trainer.name,
+        trainerId: trainer.id,
+        reward: trainer.reward,
+        currentTurn: 0,
+        activePlayerIndex: Math.max(0, gameState.player.team.findIndex(p => p.currentHp > 0)),
+        activeOpponentIndex: 0,
+      },
+      dialogueHistory: [...gameState.dialogueHistory, trainer.intro],
+    });
+    setBattleLog([trainer.intro, `${trainer.name} sends out ${trainer.team[0].name}!`]);
+    setCurrentView('battle');
+  };
 
-    const playerPokemon = gameState.player.team[0];
-    const opponentPokemon = gameState.currentBattle.opponent[0];
+  const handleTalkToNpc = (npcId: string) => {
+    const npc = currentLocation?.npcs?.find(item => item.id === npcId);
+    if (!npc) return;
+    if (npcId === 'viridian-clerk' && !gameState.storyFlags?.oakParcelCollected && !gameState.storyFlags?.oakParcelDelivered) { handleCollectParcel(); return; }
+    if (npcId === 'oak-pallet' && gameState.storyFlags?.oakParcelCollected) { handleDeliverParcel(); return; }
+    if (npcId === 'daisy-pallet' && gameState.storyFlags?.oakParcelDelivered && !hasTownMap) { handleTalkToDaisy(); return; }
+    const alreadySpoken = !!gameState.npcFlags?.[npcId];
+    const check = !alreadySpoken && npc.checkAttribute
+      ? rollAbilityCheck(gameState.player.attributes?.[npc.checkAttribute] ?? 10, npc.checkDifficulty || 10)
+      : undefined;
+    const line = alreadySpoken && npc.repeatDialogue
+      ? npc.repeatDialogue
+      : check
+        ? (check.success ? npc.successDialogue || npc.dialogue : npc.failureDialogue || npc.dialogue)
+        : npc.dialogue;
+    const modifierText = check ? (check.modifier >= 0 ? '+' + check.modifier : String(check.modifier)) : '';
+    const checkNote = check
+      ? ` [D20 ${check.roll} ${modifierText} = ${check.total} vs DC ${check.difficulty}: ${check.success ? 'success' : 'failure'}]`
+      : '';
+    setGameState({
+      ...gameState,
+      npcFlags: { ...gameState.npcFlags, [npcId]: true },
+      dialogueHistory: [...gameState.dialogueHistory, `${npc.name}: “${line}”${checkNote}`],
+    });
+  };
+
+  const handleBattleAction = (action: 'fight' | 'catch' | 'run', move?: Move) => {
+    const battle = gameState.currentBattle;
+    if (!battle) return;
+    const playerIndex = battle.activePlayerIndex ?? 0;
+    const opponentIndex = battle.activeOpponentIndex ?? 0;
+    const playerPokemon = gameState.player.team[playerIndex];
+    const opponentPokemon = battle.opponent[opponentIndex];
+    if (!playerPokemon || !opponentPokemon) return;
 
     if (action === 'run') {
-      if (gameState.currentBattle.isWild) {
-        setBattleLog([...battleLog, `${gameState.player.name} ran away safely!`]);
-        setGameState({ ...gameState, currentBattle: undefined });
-        setCurrentView('map');
-      } else {
-        setBattleLog([...battleLog, 'You can\'t run from a Trainer battle!']);
+      if (!battle.isWild) {
+        setBattleLog([...battleLog, 'You cannot run from a Trainer battle!']);
+        return;
       }
+      setGameState({ ...gameState, currentBattle: undefined });
+      setCurrentView('map');
       return;
     }
 
     if (action === 'catch') {
-      if (!gameState.currentBattle.isWild) {
-        setBattleLog([...battleLog, 'You can\'t catch another Trainer\'s Pokemon!']);
+      if (!battle.isWild) {
+        setBattleLog([...battleLog, 'You cannot catch another Trainer’s Pokémon!']);
         return;
       }
-
       if (gameState.player.inventory.pokeball <= 0) {
-        setBattleLog([...battleLog, 'You don\'t have any Poke Balls!']);
+        setBattleLog([...battleLog, 'You are out of Poké Balls!']);
         return;
       }
-
       const catchRoll = rollDice(20);
       const caught = calculateCatchRate(opponentPokemon, 'pokeball', catchRoll);
-
-      const updatedPlayer = useItem(gameState.player, 'pokeball');
-      
+      const playerAfterBall = useItem(gameState.player, 'pokeball');
       if (caught) {
-        const updatedPlayerWithPokemon = addPokemonToTeam(updatedPlayer, opponentPokemon);
-        const location = gameState.player.team.length >= 6 ? 'PC' : 'team';
-        
-        setBattleLog([
-          ...battleLog,
-          `${gameState.player.name} used a Poke Ball! (Rolled ${catchRoll})`,
-          `Gotcha! ${opponentPokemon.name} was caught!`,
-          `${opponentPokemon.name} was sent to your ${location}.`,
-        ]);
-
-        setGameState({
-          ...gameState,
-          player: updatedPlayerWithPokemon,
-          currentBattle: undefined,
-        });
+        const caughtPlayer = addPokemonToTeam(playerAfterBall, { ...opponentPokemon, currentHp: opponentPokemon.currentHp });
+        setGameState({ ...gameState, player: caughtPlayer, currentBattle: undefined, dialogueHistory: [...gameState.dialogueHistory, `Caught ${opponentPokemon.name}! It has joined your ${gameState.player.team.length >= 6 ? 'PC' : 'team'}.`] });
+        setBattleLog([...battleLog, `You rolled ${catchRoll}. Gotcha! ${opponentPokemon.name} was caught!`]);
         setCurrentView('map');
       } else {
-        setBattleLog([
-          ...battleLog,
-          `${gameState.player.name} used a Poke Ball! (Rolled ${catchRoll})`,
-          'Oh no! The Pokemon broke free!',
-        ]);
-        setGameState({
-          ...gameState,
-          player: updatedPlayer,
-        });
+        setGameState({ ...gameState, player: playerAfterBall });
+        setBattleLog([...battleLog, `You rolled ${catchRoll}. ${opponentPokemon.name} broke free!`]);
       }
       return;
     }
 
-    if (action === 'fight' && move) {
-      const battleResult = executeBattleTurn(playerPokemon, opponentPokemon, move);
-      
-      const newBattleLog = [...battleLog, ...battleResult.battleLog];
-
-      // Update HP
-      const updatedPlayerPokemon = {
-        ...playerPokemon,
-        currentHp: Math.max(0, playerPokemon.currentHp - battleResult.opponentDamage),
+    if (action !== 'fight' || !move) return;
+    if (move.pp <= 0) { setBattleLog([...battleLog, 'That move has no PP left!']); return; }
+    const result = executeBattleTurn(playerPokemon, opponentPokemon, move);
+    const playerHadTurn = result.playerFirst || playerPokemon.currentHp - result.opponentDamage > 0;
+    const nextLog = [...battleLog, ...result.battleLog];
+    const playerTeam = gameState.player.team.map((pokemon, index) => {
+      if (index !== playerIndex) return pokemon;
+      return {
+        ...pokemon,
+        currentHp: Math.max(0, pokemon.currentHp - result.opponentDamage),
+        moves: pokemon.moves.map(item => item.name === move.name && playerHadTurn ? { ...item, pp: Math.max(0, item.pp - 1) } : item),
       };
+    });
+    const opponents = battle.opponent.map((pokemon, index) => index === opponentIndex
+      ? { ...pokemon, currentHp: Math.max(0, pokemon.currentHp - result.playerDamage) }
+      : pokemon);
+    let updatedPlayer = { ...gameState.player, team: playerTeam };
+    const defeatedOpponent = opponents[opponentIndex].currentHp <= 0;
 
-      const updatedOpponentPokemon = {
-        ...opponentPokemon,
-        currentHp: Math.max(0, opponentPokemon.currentHp - battleResult.playerDamage),
-      };
+    if (defeatedOpponent) {
+      nextLog.push(`${opponentPokemon.name} fainted!`);
+      const expGain = calculateExpGain(opponentPokemon, battle.isWild);
+      let rewardedPokemon = { ...playerTeam[playerIndex], exp: playerTeam[playerIndex].exp + expGain };
+      let levelUps = 0;
+      while (checkLevelUp(rewardedPokemon) && levelUps < 10) {
+        const oldName = rewardedPokemon.name;
+        rewardedPokemon = levelUpPokemon(rewardedPokemon);
+        levelUps += 1;
+        nextLog.push(`${oldName} grew to level ${rewardedPokemon.level}!`);
+        if (oldName !== rewardedPokemon.name) nextLog.push(`${oldName} evolved into ${rewardedPokemon.name}!`);
+      }
+      updatedPlayer.team = playerTeam.map((pokemon, index) => index === playerIndex ? rewardedPokemon : pokemon);
+      nextLog.push(`${rewardedPokemon.name} gained ${expGain} EXP!`);
 
-      // Check if battle is over
-      if (updatedOpponentPokemon.currentHp <= 0) {
-        const expGained = calculateExpGain(opponentPokemon, gameState.currentBattle.isWild);
-        const updatedPlayerPokemonWithExp = {
-          ...updatedPlayerPokemon,
-          exp: updatedPlayerPokemon.exp + expGained,
-        };
-
-        newBattleLog.push(`${opponentPokemon.name} fainted!`);
-        newBattleLog.push(`${playerPokemon.name} gained ${expGained} EXP!`);
-
-        let finalPlayerPokemon = updatedPlayerPokemonWithExp;
-        if (checkLevelUp(updatedPlayerPokemonWithExp)) {
-          finalPlayerPokemon = levelUpPokemon(updatedPlayerPokemonWithExp);
-          newBattleLog.push(`${playerPokemon.name} grew to level ${finalPlayerPokemon.level}!`);
-          
-          if (finalPlayerPokemon.name !== playerPokemon.name) {
-            newBattleLog.push(`${playerPokemon.name} evolved into ${finalPlayerPokemon.name}!`);
-          }
-        }
-
-        const coinsGained = gameState.currentBattle.isGym ? currentLocation?.gymLeader?.reward || 500 : opponentPokemon.level * 50;
-        const updatedPlayer = updateCoins(gameState.player, coinsGained);
-        
-        newBattleLog.push(`You earned ${coinsGained} coins!`);
-
-        // Update team
-        const updatedTeam = [finalPlayerPokemon, ...gameState.player.team.slice(1)];
-
-        // Check if gym battle and award badge
-        let finalPlayer = { ...updatedPlayer, team: updatedTeam };
-        let updatedStoryFlags = gameState.storyFlags ? { ...gameState.storyFlags } : { rivalBattleRoute1: false };
-        
-        if (gameState.currentBattle.isGym && currentLocation?.gymLeader) {
-          finalPlayer = addBadge(finalPlayer);
-          newBattleLog.push(`You earned the ${currentLocation.gymLeader.badge}!`);
-          newBattleLog.push(currentLocation.gymLeader.dialogue.win.replace('{playerName}', gameState.player.name));
-        }
-
-        // Check if rival battle and mark as completed
-        if (gameState.currentBattle.isRival && gameState.currentBattle.trainerName === 'Blue') {
-          updatedStoryFlags.rivalBattleRoute1 = true;
-          newBattleLog.push('--- TUTORIAL COMPLETE ---');
-          newBattleLog.push('You can now encounter wild Pokemon on Route 1!');
-          newBattleLog.push('TIP: Use Poke Balls to catch wild Pokemon. Visit the PokeMart to buy more items!');
-        }
-
-        setBattleLog(newBattleLog);
+      const nextOpponentIndex = opponents.findIndex((pokemon, index) => index > opponentIndex && pokemon.currentHp > 0);
+      if (nextOpponentIndex >= 0) {
+        nextLog.push(`${battle.trainerName || 'Opponent'} sends out ${opponents[nextOpponentIndex].name}!`);
+        setBattleLog(nextLog);
         setGameState({
           ...gameState,
-          player: finalPlayer,
-          currentBattle: undefined,
-          storyFlags: updatedStoryFlags,
+          player: updatedPlayer,
+          currentBattle: { ...battle, opponent: opponents, activeOpponentIndex: nextOpponentIndex, currentTurn: battle.currentTurn + 1, battleLog: nextLog },
         });
-
-        setTimeout(() => {
-          setCurrentView('map');
-        }, 2000);
         return;
       }
 
-      if (updatedPlayerPokemon.currentHp <= 0) {
-        newBattleLog.push(`${playerPokemon.name} fainted!`);
-        
-        // Handle rival battle loss differently
-        let updatedStoryFlags = gameState.storyFlags ? { ...gameState.storyFlags } : { rivalBattleRoute1: false };
-        if (gameState.currentBattle.isRival && gameState.currentBattle.trainerName === 'Blue') {
-          updatedStoryFlags.rivalBattleRoute1 = true;
-          newBattleLog.push('Blue: "See? That\'s how it\'s done! You need to train more!"');
-          newBattleLog.push('--- TUTORIAL COMPLETE ---');
-          newBattleLog.push('Don\'t worry! You\'re healed after trainer battles.');
-          newBattleLog.push('You can now encounter wild Pokemon on Route 1!');
-          
-          const healedTeam = gameState.player.team.map(fullyHealPokemon);
-          
-          setBattleLog(newBattleLog);
-          setGameState({
-            ...gameState,
-            player: { ...gameState.player, team: healedTeam },
-            currentBattle: undefined,
-            storyFlags: updatedStoryFlags,
-          });
+      const reward = battle.isGym
+        ? currentLocation?.gymLeader?.reward || 500
+        : battle.isWild ? opponentPokemon.level * 50 : battle.reward || 0;
+      updatedPlayer = updateCoins(updatedPlayer, reward);
+      if (reward > 0) nextLog.push(`You earned ${reward} coins!`);
+      let storyFlags = { rivalBattleRoute1: false, oakParcelCollected: false, oakParcelDelivered: false, ...(gameState.storyFlags || {}) };
+      let trainerFlags = { ...(gameState.trainerFlags || {}) };
+      let gymBadges = [...(gameState.gymBadges || [])];
 
-          setTimeout(() => {
-            setCurrentView('map');
-          }, 2000);
-          return;
-        }
-        
-        const coinsLost = Math.floor(gameState.player.coins * 0.1);
-        const updatedPlayer = updateCoins(gameState.player, -coinsLost);
-        
-        newBattleLog.push(`You lost ${coinsLost} coins!`);
-        newBattleLog.push('You blacked out and returned to the Pokemon Center...');
-
-        // Heal all Pokemon
-        const healedTeam = updatedPlayer.team.map(fullyHealPokemon);
-
-        setBattleLog(newBattleLog);
-        setGameState({
-          ...gameState,
-          player: { ...updatedPlayer, team: healedTeam },
-          currentBattle: undefined,
-        });
-
-        setTimeout(() => {
-          setCurrentView('map');
-        }, 2000);
-        return;
+      if (battle.isGym && currentLocation?.gymLeader && !gymBadges.includes(currentLocation.gymLeader.badge)) {
+        gymBadges.push(currentLocation.gymLeader.badge);
+        updatedPlayer = addBadge(updatedPlayer);
+        nextLog.push(`You earned the ${currentLocation.gymLeader.badge}!`);
+        nextLog.push(currentLocation.gymLeader.dialogue.win);
       }
-
-      // Battle continues
-      const updatedOpponentTeam = [updatedOpponentPokemon, ...gameState.currentBattle.opponent.slice(1)];
-      const updatedPlayerTeam = [updatedPlayerPokemon, ...gameState.player.team.slice(1)];
-
-      setBattleLog(newBattleLog);
+      if (battle.isRival) {
+        storyFlags.rivalBattleRoute1 = true;
+        nextLog.push('Blue narrows his eyes. “Enjoy the win. I will not lose next time.”');
+      }
+      if (battle.trainerId) {
+        trainerFlags[battle.trainerId] = true;
+        const trainer = currentLocation?.trainers?.find(item => item.id === battle.trainerId);
+        if (trainer) nextLog.push(trainer.victory);
+      }
+      setBattleLog(nextLog);
       setGameState({
         ...gameState,
-        player: { ...gameState.player, team: updatedPlayerTeam },
-        currentBattle: {
-          ...gameState.currentBattle,
-          opponent: updatedOpponentTeam,
-          currentTurn: gameState.currentBattle.currentTurn + 1,
-        },
+        player: updatedPlayer,
+        currentBattle: undefined,
+        storyFlags,
+        trainerFlags,
+        gymBadges,
+        dialogueHistory: [...gameState.dialogueHistory, ...nextLog.slice(-3)],
       });
+      setCurrentView('map');
+      return;
     }
+
+    const activePlayer = playerTeam[playerIndex];
+    if (activePlayer.currentHp <= 0) {
+      nextLog.push(`${activePlayer.name} fainted!`);
+      const nextPlayerIndex = playerTeam.findIndex((pokemon, index) => index !== playerIndex && pokemon.currentHp > 0);
+      if (nextPlayerIndex >= 0) {
+        nextLog.push(`${activePlayer.name} returns. Go, ${playerTeam[nextPlayerIndex].name}!`);
+        setBattleLog(nextLog);
+        setGameState({
+          ...gameState,
+          player: updatedPlayer,
+          currentBattle: { ...battle, opponent: opponents, activePlayerIndex: nextPlayerIndex, currentTurn: battle.currentTurn + 1, battleLog: nextLog },
+        });
+        return;
+      }
+
+      const flags = { ...(gameState.storyFlags || {}) };
+      if (battle.isRival) flags.rivalBattleRoute1 = true;
+      const lostCoins = battle.isRival ? 0 : Math.floor(updatedPlayer.coins * 0.1);
+      updatedPlayer = updateCoins(updatedPlayer, -lostCoins);
+      updatedPlayer.team = updatedPlayer.team.map(fullyHealPokemon);
+      if (battle.isRival) nextLog.push(RIVAL_TRAINERS.route1Rival.dialogue.lose);
+      if (battle.isGym && currentLocation?.gymLeader) nextLog.push(currentLocation.gymLeader.dialogue.lose);
+      nextLog.push(battle.isRival ? 'Blue wins this round. Your Pokémon are taken to the Pokémon Centre and healed.' : 'Your team has no Pokémon left able to battle. You black out and wake up at the Pokémon Centre.');
+      if (lostCoins > 0) nextLog.push(`You dropped ${lostCoins} coins in the confusion.`);
+      setBattleLog(nextLog);
+      setGameState({ ...gameState, player: updatedPlayer, currentBattle: undefined, storyFlags: flags, dialogueHistory: [...gameState.dialogueHistory, nextLog[nextLog.length - 1]] });
+      setCurrentView('map');
+      return;
+    }
+
+    setBattleLog(nextLog);
+    setGameState({
+      ...gameState,
+      player: updatedPlayer,
+      currentBattle: { ...battle, opponent: opponents, currentTurn: battle.currentTurn + 1, battleLog: nextLog },
+    });
   };
 
   const handlePokemonCenter = () => {
     if (!currentLocation?.hasPokemonCenter) {
-      addDialogue('There is no Pokemon Center in this location.');
+      addDialogue('There is no Pokémon Centre in this location.');
       return;
     }
-
     const healedTeam = gameState.player.team.map(fullyHealPokemon);
     const healedPC = gameState.player.pc.map(fullyHealPokemon);
-
-    addDialogue(`Welcome to the Pokemon Center, ${gameState.player.name}!`);
-    addDialogue('We\'ve restored your Pokemon to full health!');
-
     setGameState({
       ...gameState,
-      player: {
-        ...gameState.player,
-        team: healedTeam,
-        pc: healedPC,
-      },
+      player: { ...gameState.player, team: healedTeam, pc: healedPC },
+      dialogueHistory: [...gameState.dialogueHistory, 'Welcome to the Pokémon Centre, ' + gameState.player.name + '!', 'Your Pokémon have been restored to full health!'],
     });
   };
 
@@ -474,9 +484,9 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
   if (currentView === 'battle' && gameState.currentBattle) {
     return (
       <BattleView
-        playerPokemon={gameState.player.team[0]}
-        opponentPokemon={gameState.currentBattle.opponent[0]}
-        battleLog={battleLog}
+        playerPokemon={gameState.player.team[gameState.currentBattle.activePlayerIndex ?? 0]}
+        opponentPokemon={gameState.currentBattle.opponent[gameState.currentBattle.activeOpponentIndex ?? 0]}
+        battleLog={battleLog.length ? battleLog : gameState.currentBattle.battleLog || []}
         isWild={gameState.currentBattle.isWild}
         onAction={handleBattleAction}
       />
@@ -512,8 +522,8 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
       <PCView
         player={gameState.player}
         onSwap={(teamIdx, pcIdx) => {
-          // Swap Pokemon logic would go here
-          addDialogue('Pokemon swapped!');
+          if (gameState.player.team.length <= 1) { addDialogue('You need to keep at least one Pokémon in your party.'); return; }
+          setGameState({ ...gameState, player: swapPokemon(gameState.player, teamIdx, pcIdx) });
         }}
         onBack={() => setCurrentView('map')}
       />
@@ -534,12 +544,12 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
         onPC={() => setCurrentView('pc')}
         onTravel={handleTravel}
         travelOptions={travelOptions}
-        showCollectParcel={gameState.player.location === 'viridianCity' && !gameState.storyFlags?.oakParcelCollected && !gameState.storyFlags?.oakParcelDelivered}
-        showDeliverParcel={gameState.player.location === 'palletTown' && !!gameState.storyFlags?.oakParcelCollected}
-        showTalkToDaisy={gameState.player.location === 'palletTown' && !!gameState.storyFlags?.oakParcelDelivered && !hasTownMap}
-        onCollectParcel={handleCollectParcel}
-        onDeliverParcel={handleDeliverParcel}
-        onTalkToDaisy={handleTalkToDaisy}
+        npcs={currentLocation?.npcs || []}
+        trainers={currentLocation?.trainers || []}
+        defeatedTrainers={Object.keys(gameState.trainerFlags || {}).filter(id => gameState.trainerFlags?.[id])}
+        onTalkToNpc={handleTalkToNpc}
+        onChallengeTrainer={handleChallengeTrainer}
+        canChallengeGym={canChallengeGym}
       />
 
       <div className="mt-4 flex flex-wrap gap-2">

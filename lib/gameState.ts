@@ -12,6 +12,7 @@ export function createNewGame(playerName: string, starterPokemon: Pokemon): Game
   
   const player: Player = {
     name: playerName,
+    attributes: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
     team: [starterPokemon],
     pc: [],
     coins: 3000, // Starting money
@@ -46,6 +47,9 @@ export function createNewGame(playerName: string, starterPokemon: Pokemon): Game
       knownLocations: ['palletTown', 'route1', 'viridianCity', 'route22'],
       discoveredLocations: ['palletTown'],
     },
+    npcFlags: {},
+    trainerFlags: {},
+    gymBadges: [],
   };
 }
 
@@ -67,6 +71,7 @@ export function loadGame(): GameState | null {
       ...(gameState.storyFlags || {}),
     };
     gameState.player.keyItems = gameState.player.keyItems || [];
+    gameState.player.attributes = gameState.player.attributes || { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 };
     gameState.worldKnowledge = gameState.worldKnowledge || {
       knownLocations: ['palletTown', 'route1', 'viridianCity', 'route22'],
       discoveredLocations: [gameState.player.location || 'palletTown'],
@@ -75,6 +80,9 @@ export function loadGame(): GameState | null {
       ...gameState.worldKnowledge.discoveredLocations,
       gameState.player.location,
     ]));
+    gameState.npcFlags = gameState.npcFlags || {};
+    gameState.trainerFlags = gameState.trainerFlags || {};
+    gameState.gymBadges = gameState.gymBadges || [];
     return gameState;
   } catch (error) {
     console.error('Error loading game:', error);
