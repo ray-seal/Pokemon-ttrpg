@@ -1,5 +1,8 @@
 import { Location, ShopItem, GymLeader } from '@/types/game';
 import { MOVES } from './pokedex';
+import { generateWildPokemon } from './gameLogic';
+
+const trainerPokemon = (id: number, level: number) => generateWildPokemon(id, level);
 
 // PokeMart items
 export const SHOP_ITEMS: ShopItem[] = [
@@ -85,28 +88,8 @@ export const GYM_LEADERS: { [key: string]: GymLeader } = {
       lose: 'Was I too strong for you? Come back when you\'re ready!',
     },
     team: [
-      {
-        id: 54,
-        name: 'Psyduck',
-        types: ['Water'],
-        baseStats: { hp: 50, attack: 52, defense: 48, specialAttack: 65, specialDefense: 50, speed: 55 },
-        level: 18,
-        exp: 0,
-        maxHp: 62,
-        currentHp: 62,
-        moves: [MOVES.scratch, MOVES.waterGun, MOVES.confusion],
-      },
-      {
-        id: 7,
-        name: 'Squirtle',
-        types: ['Water'],
-        baseStats: { hp: 44, attack: 48, defense: 65, specialAttack: 50, specialDefense: 64, speed: 43 },
-        level: 21,
-        exp: 0,
-        maxHp: 68,
-        currentHp: 68,
-        moves: [MOVES.tackle, MOVES.waterGun, MOVES.bubble],
-      },
+      trainerPokemon(120, 18),
+      trainerPokemon(121, 21),
     ],
   },
   surge: {
@@ -340,39 +323,74 @@ export const LOCATIONS: { [key: string]: Location } = {
   },
   route3: {
     name: 'Route 3',
-    description: 'A route with many trainers heading to Mt. Moon.',
+    description: 'A long mountain road north of Pewter. Trainers line the path, and the entrance to Mt. Moon waits at the far end.',
     wildPokemon: [
-      { pokemonId: 16, minLevel: 6, maxLevel: 8, rarity: 40 },
+      { pokemonId: 16, minLevel: 6, maxLevel: 8, rarity: 35 },
       { pokemonId: 19, minLevel: 6, maxLevel: 8, rarity: 30 },
+      { pokemonId: 21, minLevel: 7, maxLevel: 9, rarity: 20 },
+      { pokemonId: 29, minLevel: 7, maxLevel: 9, rarity: 15 },
     ],
     connectedTo: ['pewterCity', 'mtMoon'],
+    npcs: [
+      { id: 'route3-camper', name: 'Camper', role: 'Young trainer', dialogue: 'Mt. Moon is just up ahead. I heard strange lights have been seen inside the cave at night.', repeatDialogue: 'Keep your eyes open in Mt. Moon. Team Rocket have been seen around there.' },
+    ],
+    trainers: [
+      { id: 'route3-bug-catcher-rick', name: 'Bug Catcher Rick', reward: 180, intro: 'Bug Catcher Rick: My Pokémon are itching for a battle!', victory: 'Bug Catcher Rick: You have got the better of my bugs. I will keep training!', team: [trainerPokemon(13, 9), trainerPokemon(14, 9)] },
+      { id: 'route3-lass-janice', name: 'Lass Janice', reward: 180, intro: 'Lass Janice: I just caught these Pokémon. Want to see them?', victory: 'Lass Janice: You are stronger than you look!', team: [trainerPokemon(16, 9), trainerPokemon(29, 9)] },
+      { id: 'route3-youngster-ben', name: 'Youngster Ben', reward: 200, intro: 'Youngster Ben: I have been looking for a challenger!', victory: 'Youngster Ben: I need to rethink my strategy.', team: [trainerPokemon(19, 10), trainerPokemon(21, 10)] },
+      { id: 'route3-hiker-marcos', name: 'Hiker Marcos', reward: 240, intro: 'Hiker Marcos: These mountains make Pokémon tough!', victory: 'Hiker Marcos: You have earned that victory.', team: [trainerPokemon(74, 10), trainerPokemon(74, 10)] },
+    ],
   },
   mtMoon: {
     name: 'Mt. Moon',
-    description: 'A massive mountain cave filled with wild Pokemon.',
+    description: 'A vast, twisting cave beneath the mountains. Zubat flutter overhead, Geodude stir in the rubble, and rumours of strange stones have drawn unwanted visitors.',
     wildPokemon: [
-      { pokemonId: 74, minLevel: 8, maxLevel: 10, rarity: 60 },
-      { pokemonId: 19, minLevel: 8, maxLevel: 10, rarity: 40 },
+      { pokemonId: 41, minLevel: 7, maxLevel: 10, rarity: 40 },
+      { pokemonId: 74, minLevel: 8, maxLevel: 10, rarity: 30 },
+      { pokemonId: 46, minLevel: 8, maxLevel: 10, rarity: 18 },
+      { pokemonId: 35, minLevel: 8, maxLevel: 10, rarity: 7 },
+      { pokemonId: 95, minLevel: 10, maxLevel: 12, rarity: 5 },
     ],
     connectedTo: ['route3', 'route4'],
+    npcs: [
+      { id: 'mtmoon-hiker', name: 'Lost Hiker', role: 'Cave explorer', dialogue: 'I took a wrong turn and ended up here. The cave has more than one level, and the tunnels all look the same after a while.', repeatDialogue: 'I am going to stick close to the main path this time.' },
+      { id: 'mtmoon-researcher', name: 'Fossil Researcher', role: 'Pokémon fossil expert', dialogue: 'These fossils are incredibly rare. A group of thieves tried to take them, but I managed to recover two specimens. Defeat the Super Nerd guarding the chamber, then you may choose one.', repeatDialogue: 'Choose carefully. You may take only one fossil.', requiredTrainerDefeated: 'mtmoon-supernerd-miguel' },
+      { id: 'mtmoon-helix-fossil', name: 'Helix Fossil', role: 'Ancient Pokémon fossil', dialogue: 'The researcher carefully hands you the Helix Fossil.', repeatDialogue: 'The Helix Fossil is safely in your Key Items.', rewardKeyItem: 'helixFossil', rewardName: 'Helix Fossil', rewardFlag: 'mtMoonFossilChosen', requiredTrainerDefeated: 'mtmoon-supernerd-miguel' },
+      { id: 'mtmoon-dome-fossil', name: 'Dome Fossil', role: 'Ancient Pokémon fossil', dialogue: 'The researcher carefully hands you the Dome Fossil.', repeatDialogue: 'The Dome Fossil is safely in your Key Items.', rewardKeyItem: 'domeFossil', rewardName: 'Dome Fossil', rewardFlag: 'mtMoonFossilChosen', requiredTrainerDefeated: 'mtmoon-supernerd-miguel' },
+    ],
+    trainers: [
+      { id: 'mtmoon-rocket-grunt-a', name: 'Team Rocket Grunt', reward: 360, intro: 'Rocket Grunt: We are here for the fossils. Stay out of our way!', victory: 'Rocket Grunt: This is not over. Team Rocket always gets what it wants.', team: [trainerPokemon(19, 10), trainerPokemon(41, 10)] },
+      { id: 'mtmoon-rocket-grunt-b', name: 'Team Rocket Grunt', reward: 380, intro: 'Rocket Grunt: You again? Nobody gets between Team Rocket and its prize!', victory: 'Rocket Grunt: The boss will hear about this!', team: [trainerPokemon(23, 11), trainerPokemon(41, 11)] },
+      { id: 'mtmoon-supernerd-miguel', name: 'Super Nerd Miguel', reward: 420, intro: 'Super Nerd Miguel: These fossils belong in the hands of science, not thieves!', victory: 'Super Nerd Miguel: The cave is safe for now. The researcher can help you with the fossils.', team: [trainerPokemon(88, 12), trainerPokemon(100, 12)] },
+    ],
   },
   route4: {
     name: 'Route 4',
-    description: 'A downhill path that leads to Cerulean City.',
+    description: 'A rocky downhill route beyond Mt. Moon. The air is brighter here, and Cerulean City lies just ahead.',
     wildPokemon: [
-      { pokemonId: 19, minLevel: 6, maxLevel: 12, rarity: 50 },
-      { pokemonId: 54, minLevel: 8, maxLevel: 12, rarity: 50 },
+      { pokemonId: 19, minLevel: 8, maxLevel: 12, rarity: 30 },
+      { pokemonId: 21, minLevel: 8, maxLevel: 12, rarity: 25 },
+      { pokemonId: 27, minLevel: 8, maxLevel: 12, rarity: 25 },
+      { pokemonId: 56, minLevel: 9, maxLevel: 12, rarity: 20 },
     ],
     connectedTo: ['mtMoon', 'ceruleanCity'],
+    npcs: [
+      { id: 'route4-traveller', name: 'Travelling Trainer', role: 'Passing through', dialogue: 'You made it through Mt. Moon! Cerulean is a good place to rest. I would not rush into the Gym without healing first.', repeatDialogue: 'Cerulean City is just down the path. Misty is no pushover.' },
+    ],
   },
   ceruleanCity: {
     name: 'Cerulean City',
-    description: 'A beautiful blue city by the water.',
+    description: 'A bright city of waterways and bridges. Trainers come here to test themselves against the Cerulean Gym and its water-loving leader.',
     hasPokemonCenter: true,
     hasPokeMart: true,
     hasGym: true,
     gymLeader: GYM_LEADERS.misty,
-    connectedTo: ['route4', 'route24', 'route5'],
+    connectedTo: ['route4', 'route24', 'route5', 'route9', 'ceruleanCave'],
+    npcs: [
+      { id: 'cerulean-officer', name: 'Officer Jenny', role: 'Police officer', dialogue: 'There have been reports of suspicious characters around the city. Keep your belongings close and report anything unusual.', repeatDialogue: 'Stay alert. Not everyone in this city is here for a Gym challenge.' },
+      { id: 'cerulean-swimmer', name: 'Swimmer', role: 'Local trainer', dialogue: 'Misty is brilliant with Water Pokémon. Electric and Grass moves can give you an advantage, but do not underestimate her Starmie.', repeatDialogue: 'Misty trains hard. Make sure your team is ready.' },
+      { id: 'cerulean-boy', name: 'Young Boy', role: 'Local resident', dialogue: 'The Nugget Bridge north of town is full of trainers. They say there is a prize for beating everyone!', repeatDialogue: 'The bridge is north of town. Five trainers, one after another!' },
+    ],
   },
   route24: {
     name: 'Route 24',
