@@ -1,5 +1,8 @@
 import { Location, ShopItem, GymLeader } from '@/types/game';
 import { MOVES } from './pokedex';
+import { generateWildPokemon } from './gameLogic';
+
+const trainerPokemon = (id: number, level: number) => generateWildPokemon(id, level);
 
 // PokeMart items
 export const SHOP_ITEMS: ShopItem[] = [
@@ -63,14 +66,14 @@ export const GYM_LEADERS: { [key: string]: GymLeader } = {
         moves: [MOVES.tackle, MOVES.rockThrow],
       },
       {
-        id: 74,
-        name: 'Geodude',
+        id: 95,
+        name: 'Onix',
         types: ['Rock', 'Ground'],
-        baseStats: { hp: 40, attack: 80, defense: 100, specialAttack: 30, specialDefense: 30, speed: 20 },
+        baseStats: { hp: 35, attack: 45, defense: 160, specialAttack: 30, specialDefense: 45, speed: 70 },
         level: 14,
         exp: 0,
-        maxHp: 48,
-        currentHp: 48,
+        maxHp: 42,
+        currentHp: 42,
         moves: [MOVES.tackle, MOVES.rockThrow],
       },
     ],
@@ -85,28 +88,8 @@ export const GYM_LEADERS: { [key: string]: GymLeader } = {
       lose: 'Was I too strong for you? Come back when you\'re ready!',
     },
     team: [
-      {
-        id: 54,
-        name: 'Psyduck',
-        types: ['Water'],
-        baseStats: { hp: 50, attack: 52, defense: 48, specialAttack: 65, specialDefense: 50, speed: 55 },
-        level: 18,
-        exp: 0,
-        maxHp: 62,
-        currentHp: 62,
-        moves: [MOVES.scratch, MOVES.waterGun, MOVES.confusion],
-      },
-      {
-        id: 7,
-        name: 'Squirtle',
-        types: ['Water'],
-        baseStats: { hp: 44, attack: 48, defense: 65, specialAttack: 50, specialDefense: 64, speed: 43 },
-        level: 21,
-        exp: 0,
-        maxHp: 68,
-        currentHp: 68,
-        moves: [MOVES.tackle, MOVES.waterGun, MOVES.bubble],
-      },
+      trainerPokemon(120, 18),
+      trainerPokemon(121, 21),
     ],
   },
   surge: {
@@ -267,6 +250,10 @@ export const LOCATIONS: { [key: string]: Location } = {
     description: 'A quiet town. The smell of the sea is refreshing.',
     hasPokemonCenter: true,
     connectedTo: ['route1'],
+    npcs: [
+      { id: 'oak-pallet', name: 'Professor Oak', role: 'Pokémon Professor', dialogue: 'The world is full of Pokémon waiting to be discovered. Look after your starter and remember that a good trainer learns by observing.', repeatDialogue: 'Keep your eyes open out there. Kanto is full of surprises.' },
+      { id: 'daisy-pallet', name: 'Daisy', role: 'Blue’s sister', dialogue: 'Blue is always talking about becoming the greatest trainer. Try not to let his big head put you off. Come back after you have helped Grandpa with his parcel.', repeatDialogue: 'Bring Grandpa his parcel and I might have something useful for you.' },
+    ],
   },
   route1: {
     name: 'Route 1',
@@ -282,30 +269,44 @@ export const LOCATIONS: { [key: string]: Location } = {
     description: 'A beautiful city surrounded by green trees.',
     hasPokemonCenter: true,
     hasPokeMart: true,
-    hasGym: true,
+    hasGym: false,
     gymLeader: GYM_LEADERS.giovanni,
     connectedTo: ['route1', 'route2', 'route22'],
+    npcs: [
+      { id: 'viridian-old-man', name: 'Old Man', role: 'Local resident', dialogue: 'The road north leads through Viridian Forest to Pewter City. Watch your step in the tall grass. Wild Pokémon can be unpredictable.', repeatDialogue: 'Remember, the Pokémon Centre can restore your team.', checkAttribute: 'wisdom', checkDifficulty: 10, successDialogue: 'The old man leans closer. “There is a quiet path west of town. Trainers sometimes use Route 22 to prepare before heading north.”', failureDialogue: 'The old man launches into a rambling story about the good old days. You cannot quite follow his directions.' },
+      { id: 'viridian-clerk', name: 'Poké Mart Clerk', role: 'Shop assistant', dialogue: 'Welcome! We have supplies for trainers. There is also a parcel here for Professor Oak. Could you take it back to Pallet Town?', repeatDialogue: 'Professor Oak is waiting for that parcel. Best get it back to him.' },
+    ],
   },
   route2: {
     name: 'Route 2',
     description: 'A route with a small path that winds down through the forest.',
     wildPokemon: [
-      { pokemonId: 16, minLevel: 3, maxLevel: 5, rarity: 50 },
-      { pokemonId: 19, minLevel: 3, maxLevel: 5, rarity: 30 },
-      { pokemonId: 10, minLevel: 3, maxLevel: 5, rarity: 10 },
-      { pokemonId: 13, minLevel: 3, maxLevel: 5, rarity: 10 },
+      { pokemonId: 16, minLevel: 3, maxLevel: 5, rarity: 60 },
+      { pokemonId: 19, minLevel: 3, maxLevel: 5, rarity: 40 },
     ],
-    connectedTo: ['viridianCity', 'viridianForest', 'pewterCity'],
+    connectedTo: ['viridianCity', 'viridianForest'],
+    npcs: [
+      { id: 'route2-hiker', name: 'Young Hiker', role: 'Trainer in training', dialogue: 'I heard there are tiny Pokémon hiding in the forest. I am working up the courage to go in. Bug Pokémon can be surprisingly tough!', repeatDialogue: 'Still building up the courage. Maybe tomorrow.', checkAttribute: 'intelligence', checkDifficulty: 11, successDialogue: 'You spot a flash of yellow fur in the forest canopy. “Pikachu?” the hiker whispers. “They are rare, but they do live in there.”', failureDialogue: 'The hiker points vaguely at the trees. You cannot work out what he is trying to describe.' },
+    ],
+    trainers: [
+      { id: 'route2-lass-molly', name: 'Lass Molly', reward: 180, intro: 'Lass Molly: My Pokémon are small, but they are full of spirit!', victory: 'Lass Molly: You have got a good team. I need to train harder.', team: [{ id: 16, name: 'Pidgey', types: ['Normal', 'Flying'], baseStats: { hp: 40, attack: 45, defense: 40, specialAttack: 35, specialDefense: 35, speed: 56 }, level: 5, exp: 0, maxHp: 20, currentHp: 20, moves: [MOVES.tackle, MOVES.gust] }] },
+    ],
   },
   viridianForest: {
     name: 'Viridian Forest',
     description: 'A dense forest filled with Bug Pokemon.',
     wildPokemon: [
-      { pokemonId: 10, minLevel: 3, maxLevel: 5, rarity: 40 },
-      { pokemonId: 13, minLevel: 3, maxLevel: 5, rarity: 40 },
-      { pokemonId: 25, minLevel: 3, maxLevel: 5, rarity: 20 },
+      { pokemonId: 10, minLevel: 3, maxLevel: 5, rarity: 45 },
+      { pokemonId: 13, minLevel: 3, maxLevel: 5, rarity: 45 },
+      { pokemonId: 25, minLevel: 3, maxLevel: 5, rarity: 10 },
     ],
-    connectedTo: ['route2'],
+    connectedTo: ['route2', 'pewterCity'],
+    npcs: [
+      { id: 'forest-bug-catcher', name: 'Bug Catcher', role: 'Young trainer', dialogue: 'Viridian Forest is crawling with Bug Pokémon. Caterpie and Weedle are common, but keep an eye out for Pikachu too!', repeatDialogue: 'A good Bug Catcher knows every rustle in the leaves.' },
+    ],
+    trainers: [
+      { id: 'forest-bug-catcher-sam', name: 'Bug Catcher Sam', reward: 220, intro: 'Bug Catcher Sam: My bugs are ready! Let’s battle!', victory: 'Bug Catcher Sam: You squashed me fair and square. I will train them up!', team: [{ id: 10, name: 'Caterpie', types: ['Bug'], baseStats: { hp: 45, attack: 30, defense: 35, specialAttack: 20, specialDefense: 20, speed: 45 }, level: 5, exp: 0, maxHp: 20, currentHp: 20, moves: [MOVES.tackle] }, { id: 13, name: 'Weedle', types: ['Bug', 'Poison'], baseStats: { hp: 40, attack: 35, defense: 30, specialAttack: 20, specialDefense: 20, speed: 50 }, level: 5, exp: 0, maxHp: 19, currentHp: 19, moves: [MOVES.poisonSting] }] },
+    ],
   },
   pewterCity: {
     name: 'Pewter City',
@@ -314,43 +315,82 @@ export const LOCATIONS: { [key: string]: Location } = {
     hasPokeMart: true,
     hasGym: true,
     gymLeader: GYM_LEADERS.brock,
-    connectedTo: ['route2', 'route3'],
+    connectedTo: ['viridianForest', 'route3'],
+    npcs: [
+      { id: 'pewter-guide', name: 'Museum Volunteer', role: 'Local guide', dialogue: 'Pewter City is proud of its museum. Brock, our Gym Leader, specialises in Rock Pokémon. Water and Grass moves are useful against them.', repeatDialogue: 'The museum is to the north. Brock’s Gym is ready when you are.', checkAttribute: 'charisma', checkDifficulty: 12, successDialogue: 'The volunteer warms to you and shares a useful tip: Brock’s Rock Pokémon are vulnerable to Water and Grass attacks. Onix is especially tough physically.', failureDialogue: 'The volunteer gives you a polite nod but seems too busy to offer more than directions to the museum.' },
+      { id: 'pewter-child', name: 'Young Trainer', role: 'Local child', dialogue: 'I want to be strong like Brock one day! Have you visited the Pokémon Centre? It is always worth healing before a Gym challenge.', repeatDialogue: 'I am going to be a Gym Leader one day!' },
+    ],
   },
   route3: {
     name: 'Route 3',
-    description: 'A route with many trainers heading to Mt. Moon.',
+    description: 'A long mountain road north of Pewter. Trainers line the path, and the entrance to Mt. Moon waits at the far end.',
     wildPokemon: [
-      { pokemonId: 16, minLevel: 6, maxLevel: 8, rarity: 40 },
+      { pokemonId: 16, minLevel: 6, maxLevel: 8, rarity: 35 },
       { pokemonId: 19, minLevel: 6, maxLevel: 8, rarity: 30 },
+      { pokemonId: 21, minLevel: 7, maxLevel: 9, rarity: 20 },
+      { pokemonId: 29, minLevel: 7, maxLevel: 9, rarity: 15 },
     ],
     connectedTo: ['pewterCity', 'mtMoon'],
+    npcs: [
+      { id: 'route3-camper', name: 'Camper', role: 'Young trainer', dialogue: 'Mt. Moon is just up ahead. I heard strange lights have been seen inside the cave at night.', repeatDialogue: 'Keep your eyes open in Mt. Moon. Team Rocket have been seen around there.' },
+    ],
+    trainers: [
+      { id: 'route3-bug-catcher-rick', name: 'Bug Catcher Rick', reward: 180, intro: 'Bug Catcher Rick: My Pokémon are itching for a battle!', victory: 'Bug Catcher Rick: You have got the better of my bugs. I will keep training!', team: [trainerPokemon(13, 9), trainerPokemon(14, 9)] },
+      { id: 'route3-lass-janice', name: 'Lass Janice', reward: 180, intro: 'Lass Janice: I just caught these Pokémon. Want to see them?', victory: 'Lass Janice: You are stronger than you look!', team: [trainerPokemon(16, 9), trainerPokemon(29, 9)] },
+      { id: 'route3-youngster-ben', name: 'Youngster Ben', reward: 200, intro: 'Youngster Ben: I have been looking for a challenger!', victory: 'Youngster Ben: I need to rethink my strategy.', team: [trainerPokemon(19, 10), trainerPokemon(21, 10)] },
+      { id: 'route3-hiker-marcos', name: 'Hiker Marcos', reward: 240, intro: 'Hiker Marcos: These mountains make Pokémon tough!', victory: 'Hiker Marcos: You have earned that victory.', team: [trainerPokemon(74, 10), trainerPokemon(74, 10)] },
+    ],
   },
   mtMoon: {
     name: 'Mt. Moon',
-    description: 'A massive mountain cave filled with wild Pokemon.',
+    description: 'A vast, twisting cave beneath the mountains. Zubat flutter overhead, Geodude stir in the rubble, and rumours of strange stones have drawn unwanted visitors.',
     wildPokemon: [
-      { pokemonId: 74, minLevel: 8, maxLevel: 10, rarity: 60 },
-      { pokemonId: 19, minLevel: 8, maxLevel: 10, rarity: 40 },
+      { pokemonId: 41, minLevel: 7, maxLevel: 10, rarity: 40 },
+      { pokemonId: 74, minLevel: 8, maxLevel: 10, rarity: 30 },
+      { pokemonId: 46, minLevel: 8, maxLevel: 10, rarity: 18 },
+      { pokemonId: 35, minLevel: 8, maxLevel: 10, rarity: 7 },
+      { pokemonId: 95, minLevel: 10, maxLevel: 12, rarity: 5 },
     ],
     connectedTo: ['route3', 'route4'],
+    npcs: [
+      { id: 'mtmoon-hiker', name: 'Lost Hiker', role: 'Cave explorer', dialogue: 'I took a wrong turn and ended up here. The cave has more than one level, and the tunnels all look the same after a while.', repeatDialogue: 'I am going to stick close to the main path this time.' },
+      { id: 'mtmoon-researcher', name: 'Fossil Researcher', role: 'Pokémon fossil expert', dialogue: 'These fossils are incredibly rare. A group of thieves tried to take them, but I managed to recover two specimens. Defeat the Super Nerd guarding the chamber, then you may choose one.', repeatDialogue: 'Choose carefully. You may take only one fossil.', requiredTrainerDefeated: 'mtmoon-supernerd-miguel' },
+      { id: 'mtmoon-helix-fossil', name: 'Helix Fossil', role: 'Ancient Pokémon fossil', dialogue: 'The researcher carefully hands you the Helix Fossil.', repeatDialogue: 'The Helix Fossil is safely in your Key Items.', rewardKeyItem: 'helixFossil', rewardName: 'Helix Fossil', rewardFlag: 'mtMoonFossilChosen', requiredTrainerDefeated: 'mtmoon-supernerd-miguel' },
+      { id: 'mtmoon-dome-fossil', name: 'Dome Fossil', role: 'Ancient Pokémon fossil', dialogue: 'The researcher carefully hands you the Dome Fossil.', repeatDialogue: 'The Dome Fossil is safely in your Key Items.', rewardKeyItem: 'domeFossil', rewardName: 'Dome Fossil', rewardFlag: 'mtMoonFossilChosen', requiredTrainerDefeated: 'mtmoon-supernerd-miguel' },
+    ],
+    trainers: [
+      { id: 'mtmoon-rocket-grunt-a', name: 'Team Rocket Grunt', reward: 360, intro: 'Rocket Grunt: We are here for the fossils. Stay out of our way!', victory: 'Rocket Grunt: This is not over. Team Rocket always gets what it wants.', team: [trainerPokemon(19, 10), trainerPokemon(41, 10)] },
+      { id: 'mtmoon-rocket-grunt-b', name: 'Team Rocket Grunt', reward: 380, intro: 'Rocket Grunt: You again? Nobody gets between Team Rocket and its prize!', victory: 'Rocket Grunt: The boss will hear about this!', team: [trainerPokemon(23, 11), trainerPokemon(41, 11)] },
+      { id: 'mtmoon-supernerd-miguel', name: 'Super Nerd Miguel', reward: 420, intro: 'Super Nerd Miguel: These fossils belong in the hands of science, not thieves!', victory: 'Super Nerd Miguel: The cave is safe for now. The researcher can help you with the fossils.', team: [trainerPokemon(88, 12), trainerPokemon(100, 12)] },
+    ],
   },
   route4: {
     name: 'Route 4',
-    description: 'A downhill path that leads to Cerulean City.',
+    description: 'A rocky downhill route beyond Mt. Moon. The air is brighter here, and Cerulean City lies just ahead.',
     wildPokemon: [
-      { pokemonId: 19, minLevel: 6, maxLevel: 12, rarity: 50 },
-      { pokemonId: 54, minLevel: 8, maxLevel: 12, rarity: 50 },
+      { pokemonId: 19, minLevel: 8, maxLevel: 12, rarity: 30 },
+      { pokemonId: 21, minLevel: 8, maxLevel: 12, rarity: 25 },
+      { pokemonId: 27, minLevel: 8, maxLevel: 12, rarity: 25 },
+      { pokemonId: 56, minLevel: 9, maxLevel: 12, rarity: 20 },
     ],
     connectedTo: ['mtMoon', 'ceruleanCity'],
+    npcs: [
+      { id: 'route4-traveller', name: 'Travelling Trainer', role: 'Passing through', dialogue: 'You made it through Mt. Moon! Cerulean is a good place to rest. I would not rush into the Gym without healing first.', repeatDialogue: 'Cerulean City is just down the path. Misty is no pushover.' },
+    ],
   },
   ceruleanCity: {
     name: 'Cerulean City',
-    description: 'A beautiful blue city by the water.',
+    description: 'A bright city of waterways and bridges. Trainers come here to test themselves against the Cerulean Gym and its water-loving leader.',
     hasPokemonCenter: true,
     hasPokeMart: true,
     hasGym: true,
     gymLeader: GYM_LEADERS.misty,
-    connectedTo: ['route4', 'route24', 'route5'],
+    connectedTo: ['route4', 'route24', 'route5', 'route9', 'ceruleanCave'],
+    npcs: [
+      { id: 'cerulean-officer', name: 'Officer Jenny', role: 'Police officer', dialogue: 'There have been reports of suspicious characters around the city. Keep your belongings close and report anything unusual.', repeatDialogue: 'Stay alert. Not everyone in this city is here for a Gym challenge.' },
+      { id: 'cerulean-swimmer', name: 'Swimmer', role: 'Local trainer', dialogue: 'Misty is brilliant with Water Pokémon. Electric and Grass moves can give you an advantage, but do not underestimate her Starmie.', repeatDialogue: 'Misty trains hard. Make sure your team is ready.' },
+      { id: 'cerulean-boy', name: 'Young Boy', role: 'Local resident', dialogue: 'The Nugget Bridge north of town is full of trainers. They say there is a prize for beating everyone!', repeatDialogue: 'The bridge is north of town. Five trainers, one after another!' },
+    ],
   },
   route24: {
     name: 'Route 24',

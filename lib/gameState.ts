@@ -12,6 +12,7 @@ export function createNewGame(playerName: string, starterPokemon: Pokemon): Game
   
   const player: Player = {
     name: playerName,
+    attributes: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
     team: [starterPokemon],
     pc: [],
     coins: 3000, // Starting money
@@ -27,6 +28,7 @@ export function createNewGame(playerName: string, starterPokemon: Pokemon): Game
       revive: 0,
     },
     pokedex: initialPokedex,
+    keyItems: [],
   };
   
   return {
@@ -38,7 +40,16 @@ export function createNewGame(playerName: string, starterPokemon: Pokemon): Game
     ],
     storyFlags: {
       rivalBattleRoute1: false,
+      oakParcelCollected: false,
+      oakParcelDelivered: false,
     },
+    worldKnowledge: {
+      knownLocations: ['palletTown', 'route1', 'viridianCity', 'route22'],
+      discoveredLocations: ['palletTown'],
+    },
+    npcFlags: {},
+    trainerFlags: {},
+    gymBadges: [],
   };
 }
 
@@ -52,13 +63,26 @@ export function loadGame(): GameState | null {
     
     const gameState: GameState = JSON.parse(savedData);
     
-    // Backward compatibility: Initialize storyFlags if missing
-    if (!gameState.storyFlags) {
-      gameState.storyFlags = {
-        rivalBattleRoute1: false,
-      };
-    }
-    
+    // Migrate saves created by earlier versions.
+    gameState.storyFlags = {
+      rivalBattleRoute1: false,
+      oakParcelCollected: false,
+      oakParcelDelivered: false,
+      ...(gameState.storyFlags || {}),
+    };
+    gameState.player.keyItems = gameState.player.keyItems || [];
+    gameState.player.attributes = gameState.player.attributes || { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 };
+    gameState.worldKnowledge = gameState.worldKnowledge || {
+      knownLocations: ['palletTown', 'route1', 'viridianCity', 'route22'],
+      discoveredLocations: [gameState.player.location || 'palletTown'],
+    };
+    gameState.worldKnowledge.discoveredLocations = Array.from(new Set([
+      ...gameState.worldKnowledge.discoveredLocations,
+      gameState.player.location,
+    ]));
+    gameState.npcFlags = gameState.npcFlags || {};
+    gameState.trainerFlags = gameState.trainerFlags || {};
+    gameState.gymBadges = gameState.gymBadges || [];
     return gameState;
   } catch (error) {
     console.error('Error loading game:', error);

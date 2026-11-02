@@ -52,8 +52,20 @@ export interface LearnableMove {
   move: Move;
 }
 
+export type TrainerAttribute = 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma';
+
+export interface TrainerAttributes {
+  strength: number;
+  dexterity: number;
+  constitution: number;
+  intelligence: number;
+  wisdom: number;
+  charisma: number;
+}
+
 export interface Player {
   name: string;
+  attributes: TrainerAttributes;
   team: Pokemon[];
   pc: Pokemon[];
   coins: number;
@@ -61,6 +73,7 @@ export interface Player {
   location: string;
   inventory: Inventory;
   pokedex: PokedexStatus;
+  keyItems: string[];
 }
 
 export interface Inventory {
@@ -87,6 +100,32 @@ export interface ShopItem {
   key: keyof Inventory;
 }
 
+export interface NPC {
+  id: string;
+  name: string;
+  role: string;
+  dialogue: string;
+  repeatDialogue?: string;
+  onceFlag?: string;
+  checkAttribute?: TrainerAttribute;
+  checkDifficulty?: number;
+  successDialogue?: string;
+  failureDialogue?: string;
+  rewardKeyItem?: string;
+  rewardName?: string;
+  rewardFlag?: string;
+  requiredTrainerDefeated?: string;
+}
+
+export interface TrainerEncounter {
+  id: string;
+  name: string;
+  team: Pokemon[];
+  reward: number;
+  intro: string;
+  victory: string;
+}
+
 export interface Location {
   name: string;
   description: string;
@@ -96,6 +135,8 @@ export interface Location {
   hasPokemonCenter?: boolean;
   hasPokeMart?: boolean;
   connectedTo: string[];
+  npcs?: NPC[];
+  trainers?: TrainerEncounter[];
 }
 
 export interface WildEncounter {
@@ -134,11 +175,25 @@ export interface GameState {
     isRival?: boolean;
     trainerName?: string;
     currentTurn: number;
+    activePlayerIndex?: number;
+    activeOpponentIndex?: number;
+    trainerId?: string;
+    reward?: number;
+    battleLog?: string[];
   };
   gameStarted: boolean;
   dialogueHistory: string[];
   storyFlags?: {
     rivalBattleRoute1?: boolean;
+    oakParcelCollected?: boolean;
+    oakParcelDelivered?: boolean;
     [key: string]: boolean | undefined;
   };
+  worldKnowledge?: {
+    knownLocations: string[];
+    discoveredLocations: string[];
+  };
+  npcFlags?: { [npcId: string]: boolean };
+  trainerFlags?: { [trainerId: string]: boolean };
+  gymBadges?: string[];
 }

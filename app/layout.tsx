@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
   title: "Pokemon TTRPG - Red Adventure",
-  description: "A text-based Pokemon tabletop RPG adventure based on Pokemon Red",
+  description: "An independent Pokémon tabletop RPG adventure based on Pokémon Red",
   manifest: "/manifest.json",
-  themeColor: "#FF1111",
+  themeColor: "#b91c1c",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -21,7 +26,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ServiceWorkerRegistration />
+        {children}
+      </body>
     </html>
   );
 }

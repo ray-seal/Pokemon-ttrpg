@@ -1,24 +1,20 @@
 {
+  "id": "/",
   "name": "Pokemon TTRPG - Red Adventure",
   "short_name": "Pokemon TTRPG",
-  "description": "A text-based Pokemon tabletop RPG adventure",
+  "description": "An independent, installable Pokémon tabletop RPG adventure through Kanto.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#FF1111",
+  "background_color": "#111827",
+  "theme_color": "#b91c1c",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }

@@ -54,8 +54,8 @@ export function calculateDamage(
   const level = attacker.level;
   
   // Simple damage calculation - use attack and defense stats
-  const attack = attacker.baseStats.attack + attacker.baseStats.specialAttack;
-  const defense = defender.baseStats.defense + defender.baseStats.specialDefense;
+  const attack = Math.max(attacker.baseStats.attack, attacker.baseStats.specialAttack);
+  const defense = Math.max(1, Math.max(defender.baseStats.defense, defender.baseStats.specialDefense));
   
   // Base damage calculation
   const baseDamage = ((2 * level / 5 + 2) * move.power * attack / defense / 50 + 2);
@@ -66,10 +66,11 @@ export function calculateDamage(
   // STAB (Same Type Attack Bonus)
   const stab = attacker.types.includes(move.type) ? 1.5 : 1;
   
-  // Dice roll modifier (1-20)
-  const rollModifier = roll / 10; // 0.1 to 2.0
-  
-  const totalDamage = Math.floor(baseDamage * effectiveness * stab * rollModifier);
+  // The d20 decides accuracy and adds a modest damage variance. A natural 20
+  // is a critical hit; the roll never multiplies damage by an absurd amount.
+  const rollModifier = 0.85 + (roll / 20) * 0.15;
+  const critical = roll === 20 ? 1.5 : 1;
+  const totalDamage = Math.floor(baseDamage * effectiveness * stab * rollModifier * critical);
   
   return Math.max(1, totalDamage);
 }
@@ -320,4 +321,37 @@ export function executeBattleTurn(
     opponentHit,
     battleLog,
   };
+}
+
+
+/** Selects an encounter using rarity values as relative weights. */
+export function selectWeightedEncounter<T extends { rarity: number }>(
+  encounters: T[],
+  roll: number
+): T | undefined {
+  if (encounters.length === 0) return undefined;
+  const totalWeight = encounters.reduce((sum, item) => sum + Math.max(0, item.rarity), 0);
+  if (totalWeight <= 0) return encounters[0];
+  const boundedRoll = Math.min(1, Math.max(0, (roll - 1) / 100));
+  let cursor = boundedRoll * totalWeight;
+  for (const encounter of encounters) {
+    cursor -= Math.max(0, encounter.rarity);
+    if (cursor < 0) return encounter;
+  }
+  return encounters[encounters.length - 1];
+}
+
+
+export function getAbilityModifier(score: number): number {
+  return Math.floor((score - 10) / 2);
+}
+
+export function rollAbilityCheck(
+  score: number,
+  difficulty: number,
+  roll: number = rollDice(20)
+): { roll: number; modifier: number; total: number; difficulty: number; success: boolean } {
+  const modifier = getAbilityModifier(score);
+  const total = roll + modifier;
+  return { roll, modifier, total, difficulty, success: total >= difficulty };
 }
