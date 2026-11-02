@@ -217,6 +217,30 @@ export default function GameInterface({ gameState, setGameState }: GameInterface
     if (npcId === 'viridian-clerk' && !gameState.storyFlags?.oakParcelCollected && !gameState.storyFlags?.oakParcelDelivered) { handleCollectParcel(); return; }
     if (npcId === 'oak-pallet' && gameState.storyFlags?.oakParcelCollected) { handleDeliverParcel(); return; }
     if (npcId === 'daisy-pallet' && gameState.storyFlags?.oakParcelDelivered && !hasTownMap) { handleTalkToDaisy(); return; }
+    if (npc.requiredTrainerDefeated && !gameState.trainerFlags?.[npc.requiredTrainerDefeated]) {
+      addDialogue(`${npc.name}: “You need to defeat the trainer guarding this area first.”`);
+      return;
+    }
+    if (npc.rewardFlag && gameState.storyFlags?.[npc.rewardFlag]) {
+      addDialogue(`${npc.name}: “${npc.repeatDialogue || 'You have already made your choice.'}”`);
+      return;
+    }
+    if (npc.rewardKeyItem) {
+      const rewardFlag = npc.rewardFlag || `npcReward-${npc.id}`;
+      const keyItems = gameState.player.keyItems || [];
+      setGameState({
+        ...gameState,
+        player: { ...gameState.player, keyItems: keyItems.includes(npc.rewardKeyItem) ? keyItems : [...keyItems, npc.rewardKeyItem] },
+        storyFlags: { ...gameState.storyFlags, [rewardFlag]: true },
+        npcFlags: { ...gameState.npcFlags, [npcId]: true },
+        dialogueHistory: [
+          ...gameState.dialogueHistory,
+          `${npc.name}: “${npc.dialogue}”`,
+          `${npc.rewardName || npc.rewardKeyItem} added to Key Items.`,
+        ],
+      });
+      return;
+    }
     const alreadySpoken = !!gameState.npcFlags?.[npcId];
     const check = !alreadySpoken && npc.checkAttribute
       ? rollAbilityCheck(gameState.player.attributes?.[npc.checkAttribute] ?? 10, npc.checkDifficulty || 10)
